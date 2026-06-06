@@ -38,8 +38,20 @@ async function bootstrap() {
   app.use(morgan(nodeEnv === 'production' ? 'combined' : 'dev'));
 
   // ── CORS ─────────────────────────────────────────────────
+  const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
   app.enableCors({
-    origin: configService.get<string>('FRONTEND_URL', 'http://localhost:3000'),
+    origin: (origin, callback) => {
+      if (
+        !origin ||
+        origin === frontendUrl ||
+        origin.endsWith('.onrender.com') ||
+        origin.startsWith('http://localhost')
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS: origin ${origin} not allowed`));
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
