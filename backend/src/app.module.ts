@@ -4,7 +4,7 @@
  */
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { CacheModule } from '@nestjs/cache-manager';
 import { APP_GUARD } from '@nestjs/core';
@@ -73,11 +73,10 @@ import { AuditTrail } from './common/entities/audit-trail.entity';
     // ── Database ───────────────────────────────────────────
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (config: ConfigService) => {
+      useFactory: (config: ConfigService): TypeOrmModuleOptions => {
         const databaseUrl = config.get<string>('DATABASE_URL');
         const isProd = config.get('NODE_ENV') === 'production';
-        const base = {
-          type: 'postgres' as const,
+        const shared = {
           entities: [
             User, Role, Process, Document,
             Kpi, KpiMesure, Risk, Audit, Finding,
@@ -92,15 +91,16 @@ import { AuditTrail } from './common/entities/audit-trail.entity';
           ssl: isProd ? { rejectUnauthorized: false } : false,
         };
         if (databaseUrl) {
-          return { ...base, url: databaseUrl };
+          return { type: 'postgres', url: databaseUrl, ...shared };
         }
         return {
-          ...base,
-          host:     config.get('DB_HOST', 'localhost'),
+          type: 'postgres',
+          host:     config.get<string>('DB_HOST', 'localhost'),
           port:     config.get<number>('DB_PORT', 5432),
-          username: config.get('DB_USER', 'smoe_user'),
-          password: config.get('DB_PASSWORD', 'smoe_password'),
-          database: config.get('DB_NAME', 'smoe_ifdl'),
+          username: config.get<string>('DB_USER', 'smoe_user'),
+          password: config.get<string>('DB_PASSWORD', 'smoe_password'),
+          database: config.get<string>('DB_NAME', 'smoe_ifdl'),
+          ...shared,
         };
       },
       inject: [ConfigService],
