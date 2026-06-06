@@ -75,7 +75,23 @@ function formatDate(dateStr: string | null): string {
 }
 
 // ── Upload Modal ───────────────────────────────────────────────────────────
-function UploadModal({ onClose }: { onClose: () => void }) {
+type NewDoc = { reference: string; titre: string; version: string; type: string; process: string; auteur: string };
+
+function UploadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (doc: NewDoc) => void }) {
+  const [form, setForm] = useState<NewDoc>({ reference: '', titre: '', version: '1.0', type: '', process: '', auteur: '' });
+  const [error, setError] = useState('');
+
+  const set = (k: keyof NewDoc, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleSubmit = () => {
+    if (!form.reference || !form.titre || !form.type || !form.process) {
+      setError('Veuillez remplir tous les champs obligatoires (*)');
+      return;
+    }
+    onAdd(form);
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <motion.div
@@ -94,27 +110,33 @@ function UploadModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
+        {error && (
+          <div className="mb-3 flex items-center gap-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" /> {error}
+          </div>
+        )}
+
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs font-medium">Référence *</Label>
-              <Input placeholder="ex : PR-QUA-002" className="h-9 text-sm" />
+              <Input value={form.reference} onChange={e => set('reference', e.target.value)} placeholder="ex : PR-QUA-002" className="h-9 text-sm" />
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium">Version</Label>
-              <Input placeholder="1.0" className="h-9 text-sm" />
+              <Input value={form.version} onChange={e => set('version', e.target.value)} placeholder="1.0" className="h-9 text-sm" />
             </div>
           </div>
 
           <div className="space-y-1">
             <Label className="text-xs font-medium">Titre du document *</Label>
-            <Input placeholder="Nom complet du document..." className="h-9 text-sm" />
+            <Input value={form.titre} onChange={e => set('titre', e.target.value)} placeholder="Nom complet du document..." className="h-9 text-sm" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs font-medium">Type *</Label>
-              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+              <select value={form.type} onChange={e => set('type', e.target.value)} className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
                 <option value="">Sélectionner...</option>
                 <option value="procedure">Procédure</option>
                 <option value="instruction">Instruction</option>
@@ -125,7 +147,7 @@ function UploadModal({ onClose }: { onClose: () => void }) {
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium">Processus lié *</Label>
-              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+              <select value={form.process} onChange={e => set('process', e.target.value)} className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
                 <option value="">Sélectionner...</option>
                 <option value="PR-01">PR-01 — Pilotage</option>
                 <option value="PR-02">PR-02 — Réalisation pédagogique</option>
@@ -137,11 +159,11 @@ function UploadModal({ onClose }: { onClose: () => void }) {
 
           <div className="space-y-1">
             <Label className="text-xs font-medium">Auteur / Rédacteur</Label>
-            <Input placeholder="Nom du rédacteur..." className="h-9 text-sm" />
+            <Input value={form.auteur} onChange={e => set('auteur', e.target.value)} placeholder="Nom du rédacteur..." className="h-9 text-sm" />
           </div>
 
           <div className="space-y-1">
-            <Label className="text-xs font-medium">Fichier *</Label>
+            <Label className="text-xs font-medium">Fichier</Label>
             <div className="border-2 border-dashed border-border rounded-xl p-6 text-center cursor-pointer hover:bg-muted/30 transition-colors">
               <Upload className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
               <p className="text-xs font-medium text-muted-foreground">Glisser-déposer ou cliquer pour importer</p>
@@ -153,8 +175,8 @@ function UploadModal({ onClose }: { onClose: () => void }) {
             <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose}>
               Annuler
             </Button>
-            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={onClose}>
-              <Upload className="h-3 w-3" /> Importer le document
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSubmit}>
+              <Upload className="h-3 w-3" /> Ajouter le document
             </Button>
           </div>
         </div>
@@ -281,30 +303,42 @@ function DocumentRow({ doc, index }: { doc: typeof documents[0]; index: number }
 
 // ── Main Page ─────────────────────────────────────────────────────────────
 export default function DocumentsPage() {
+  const [docs, setDocs] = useState(documents);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('tous');
   const [filterStatut, setFilterStatut] = useState('tous');
   const [showUpload, setShowUpload] = useState(false);
 
+  const handleAdd = (newDoc: { reference: string; titre: string; version: string; type: string; process: string; auteur: string }) => {
+    setDocs(prev => [...prev, {
+      id: prev.length + 1,
+      ...newDoc,
+      statut: 'brouillon',
+      date_approbation: null,
+      date_revision: null,
+      file_url: '#',
+    }]);
+  };
+
   // Computed stats
   const stats = useMemo(() => {
-    const approuves = documents.filter(d => d.statut === 'approuve').length;
-    const enRevision = documents.filter(d => d.statut === 'en_revision').length;
-    const expires = documents.filter(d => isExpired(d.date_revision)).length;
-    const expiringSoonCount = documents.filter(d => isExpiringSoon(d.date_revision)).length;
-    return { total: documents.length, approuves, enRevision, expires, expiringSoonCount };
-  }, []);
+    const approuves = docs.filter(d => d.statut === 'approuve').length;
+    const enRevision = docs.filter(d => d.statut === 'en_revision').length;
+    const expires = docs.filter(d => isExpired(d.date_revision)).length;
+    const expiringSoonCount = docs.filter(d => isExpiringSoon(d.date_revision)).length;
+    return { total: docs.length, approuves, enRevision, expires, expiringSoonCount };
+  }, [docs]);
 
   // Type pill counts
   const typeCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    documents.forEach(d => { counts[d.type] = (counts[d.type] ?? 0) + 1; });
+    docs.forEach(d => { counts[d.type] = (counts[d.type] ?? 0) + 1; });
     return counts;
-  }, []);
+  }, [docs]);
 
   // Filtered list
   const filtered = useMemo(() => {
-    return documents.filter(d => {
+    return docs.filter(d => {
       const matchSearch =
         d.titre.toLowerCase().includes(search.toLowerCase()) ||
         d.reference.toLowerCase().includes(search.toLowerCase());
@@ -312,7 +346,7 @@ export default function DocumentsPage() {
       const matchStatut = filterStatut === 'tous' || d.statut === filterStatut;
       return matchSearch && matchType && matchStatut;
     });
-  }, [search, filterType, filterStatut]);
+  }, [docs, search, filterType, filterStatut]);
 
   return (
     <div className="page-container animate-fade-up">
@@ -367,7 +401,7 @@ export default function DocumentsPage() {
               : 'bg-muted text-muted-foreground border-border hover:bg-muted/80'
           )}
         >
-          Tous ({documents.length})
+          Tous ({docs.length})
         </button>
         {Object.entries(typeConfig).map(([key, cfg]) => (
           <button
@@ -482,7 +516,7 @@ export default function DocumentsPage() {
         {/* Footer */}
         <div className="flex items-center justify-between px-4 py-2.5 border-t border-border bg-muted/20">
           <p className="text-[10px] text-muted-foreground">
-            {filtered.length} document{filtered.length !== 1 ? 's' : ''} affiché{filtered.length !== 1 ? 's' : ''} sur {documents.length}
+            {filtered.length} document{filtered.length !== 1 ? 's' : ''} affiché{filtered.length !== 1 ? 's' : ''} sur {docs.length}
           </p>
           <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
             <span className="flex items-center gap-1">
@@ -499,7 +533,7 @@ export default function DocumentsPage() {
 
       {/* Upload Modal */}
       <AnimatePresence>
-        {showUpload && <UploadModal onClose={() => setShowUpload(false)} />}
+        {showUpload && <UploadModal onClose={() => setShowUpload(false)} onAdd={handleAdd} />}
       </AnimatePresence>
     </div>
   );
