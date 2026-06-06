@@ -27,6 +27,7 @@ import { ReportsModule } from './reports/reports.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { IsoCenterModule } from './iso-center/iso-center.module';
 import { CompetenciesModule } from './competencies/competencies.module';
+import { HealthModule } from './health/health.module';
 
 // Guards
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -113,6 +114,7 @@ import { AuditTrail } from './common/entities/audit-trail.entity';
     ReportsModule,
     NotificationsModule,
     IsoCenterModule,
+    HealthModule,
   ],
   providers: [
     // Global JWT guard — all routes protected by default
