@@ -81,13 +81,27 @@ export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
-  const { user, logout } = useAuthStore();
+  const { user, logout, isAuthenticated } = useAuthStore();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => { setMobileOpen(false); }, [pathname]);
+
+  useEffect(() => {
+    if (mounted && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [mounted, isAuthenticated, router]);
+
+  if (!mounted || !isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const handleLogout = () => {
     logout();
