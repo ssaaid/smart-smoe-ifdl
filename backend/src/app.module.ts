@@ -73,26 +73,36 @@ import { AuditTrail } from './common/entities/audit-trail.entity';
     // ── Database ───────────────────────────────────────────
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host:     config.get('DB_HOST', 'localhost'),
-        port:     config.get<number>('DB_PORT', 5432),
-        username: config.get('DB_USER', 'smoe_user'),
-        password: config.get('DB_PASSWORD', 'smoe_password'),
-        database: config.get('DB_NAME', 'smoe_ifdl'),
-        entities: [
-          User, Role, Process, Document,
-          Kpi, KpiMesure, Risk, Audit, Finding,
-          CorrectiveAction, Complaint,
-          SatisfactionSurvey, SurveyResponse,
-          Training, Competency, UserCompetency,
-          Report, Notification,
-          IsoClause, MaturityAssessment, AuditTrail,
-        ],
-        synchronize: config.get('NODE_ENV') !== 'production',
-        logging:    config.get('NODE_ENV') === 'development',
-        ssl: config.get('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
-      }),
+      useFactory: (config: ConfigService) => {
+        const databaseUrl = config.get<string>('DATABASE_URL');
+        const isProd = config.get('NODE_ENV') === 'production';
+        const base = {
+          type: 'postgres' as const,
+          entities: [
+            User, Role, Process, Document,
+            Kpi, KpiMesure, Risk, Audit, Finding,
+            CorrectiveAction, Complaint,
+            SatisfactionSurvey, SurveyResponse,
+            Training, Competency, UserCompetency,
+            Report, Notification,
+            IsoClause, MaturityAssessment, AuditTrail,
+          ],
+          synchronize: !isProd,
+          logging: !isProd,
+          ssl: isProd ? { rejectUnauthorized: false } : false,
+        };
+        if (databaseUrl) {
+          return { ...base, url: databaseUrl };
+        }
+        return {
+          ...base,
+          host:     config.get('DB_HOST', 'localhost'),
+          port:     config.get<number>('DB_PORT', 5432),
+          username: config.get('DB_USER', 'smoe_user'),
+          password: config.get('DB_PASSWORD', 'smoe_password'),
+          database: config.get('DB_NAME', 'smoe_ifdl'),
+        };
+      },
       inject: [ConfigService],
     }),
 
