@@ -20,9 +20,18 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor — handle 401
+// Response interceptor — unwrap backend envelope + handle 401
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // The backend TransformInterceptor wraps every response as
+    // { success: true, data: <actual payload>, timestamp: '...' }
+    // Unwrap it so callers always get the actual payload in response.data
+    const d = response.data;
+    if (d && typeof d === 'object' && 'success' in d && 'data' in d) {
+      response.data = d.data;
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       if (typeof window !== 'undefined') {
