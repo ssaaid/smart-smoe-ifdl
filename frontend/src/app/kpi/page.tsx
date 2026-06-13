@@ -336,20 +336,27 @@ function SaisieModal({ kpi, onClose, onUpdate }: { kpi: typeof kpiList[0]; onClo
   const handleSubmit = async () => {
     const v = parseFloat(valeur);
     if (isNaN(v)) { setError('Veuillez saisir une valeur valide.'); return; }
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!kpi.id || !uuidRe.test(String(kpi.id))) {
+      setError('KPI non synchronisé avec le serveur. Veuillez rafraîchir la page (Ctrl+Shift+R).');
+      return;
+    }
     setLoading(true); setError('');
     try {
       const nouvelleValeur = v;
       const statut = nouvelleValeur >= kpi.valeur_cible ? 'vert' : nouvelleValeur >= kpi.seuil_alerte ? 'orange' : 'rouge';
-      const { data } = await api.patch(`/kpis/${kpi.id}`, {
-        valeur_actuelle: nouvelleValeur,
-        statut,
+      const periodeISO = new Date(periode + '-01').toISOString();
+      await api.post(`/kpis/${kpi.id}/mesures`, {
+        valeur: nouvelleValeur,
+        periode: periodeISO,
         commentaire: commentaire || undefined,
-        periode,
       });
-      onUpdate({ ...kpi, ...data, valeur_actuelle: nouvelleValeur, statut });
+      onUpdate({ ...kpi, valeur_actuelle: nouvelleValeur, statut });
       onClose();
-    } catch {
-      setError("Erreur lors de l'enregistrement. Veuillez réessayer.");
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const msg = err?.response?.data?.message || err?.message || '';
+      setError(`Erreur ${status ? `(${status}) ` : ''}lors de l'enregistrement. ${msg}`);
     } finally {
       setLoading(false);
     }
@@ -436,7 +443,9 @@ export default function KpiPage() {
         setList(r.data.map((k: any) => ({
           ...k,
           historique:      k.historique      ?? [],
-          valeur_actuelle: k.valeur_actuelle ?? 0,
+          valeur_actuelle: Number(k.valeur_actuelle ?? 0),
+          valeur_cible:    Number(k.valeur_cible    ?? 100),
+          seuil_alerte:    Number(k.seuil_alerte    ?? 80),
           process:         k.process         ?? 'PR-01',
           axe:             k.axe             ?? 'Qualité',
           responsable:     k.responsable     ?? '',

@@ -94,8 +94,8 @@ export class KpiMesure {
   @Column({ type: 'varchar' })
   statut: string;
 
-  @Column({ type: 'uuid' })
-  saisie_par: string;
+  @Column({ type: 'uuid', nullable: true })
+  saisie_par: string | null;
 
   @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;
