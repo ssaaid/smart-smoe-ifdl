@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { downloadExport } from '@/lib/export';
+import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileX, Plus, Search, Filter, Calendar, User,
@@ -127,7 +128,39 @@ const tabFilters: Record<string, string[]> = {
 };
 
 // ── Add Finding Form (Modal) ───────────────────────────────────
-function AddFindingForm({ onClose }: { onClose: () => void }) {
+function AddFindingForm({ onClose, onAdd }: { onClose: () => void; onAdd: (f: any) => void }) {
+  const [type, setType] = useState('nc_majeure');
+  const [clause, setClause] = useState('');
+  const [description, setDescription] = useState('');
+  const [audit, setAudit] = useState('AUD-2026-001');
+  const [process, setProcess] = useState('PR-01');
+  const [responsable, setResponsable] = useState('');
+  const [echeance, setEcheance] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async () => {
+    if (!description.trim() || !clause.trim()) { setError('La description et la clause sont requises.'); return; }
+    setLoading(true); setError('');
+    try {
+      const nextId = Date.now();
+      const code = `NC-${new Date().getFullYear()}-${String(nextId).slice(-3)}`;
+      const { data } = await api.post('/findings', {
+        code, type, clause, description, audit, process,
+        responsable: responsable || null, statut: 'ouverte',
+        echeance: echeance || null, avancement: 0,
+        date_constat: new Date().toISOString().slice(0, 10),
+        historique: [],
+      });
+      onAdd(data);
+      onClose();
+    } catch {
+      setError("Erreur lors de l'enregistrement. Veuillez réessayer.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <motion.div
@@ -147,7 +180,7 @@ function AddFindingForm({ onClose }: { onClose: () => void }) {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs font-medium">Type de constat *</Label>
-              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3" value={type} onChange={e => setType(e.target.value)}>
                 <option value="nc_majeure">NC Majeure</option>
                 <option value="nc_mineure">NC Mineure</option>
                 <option value="observation">Observation</option>
@@ -156,7 +189,7 @@ function AddFindingForm({ onClose }: { onClose: () => void }) {
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium">Clause ISO concernée *</Label>
-              <Input placeholder="ex. 7.5.3" className="h-9 text-sm" />
+              <Input placeholder="ex. 7.5.3" className="h-9 text-sm" value={clause} onChange={e => setClause(e.target.value)} />
             </div>
           </div>
 
@@ -165,13 +198,15 @@ function AddFindingForm({ onClose }: { onClose: () => void }) {
             <textarea
               className="w-full h-24 rounded-lg border border-input bg-background text-sm px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Décrivez précisément le constat, les éléments de preuve, l'écart par rapport à la norme..."
+              value={description}
+              onChange={e => setDescription(e.target.value)}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs font-medium">Audit source</Label>
-              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3" value={audit} onChange={e => setAudit(e.target.value)}>
                 <option>AUD-2026-001</option>
                 <option>AUD-2026-002</option>
                 <option>AUD-2026-003</option>
@@ -180,7 +215,7 @@ function AddFindingForm({ onClose }: { onClose: () => void }) {
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium">Processus concerné</Label>
-              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3" value={process} onChange={e => setProcess(e.target.value)}>
                 <option value="PR-01">PR-01 — Pilotage</option>
                 <option value="PR-02">PR-02 — Réalisation pédagogique</option>
                 <option value="PR-03">PR-03 — Support</option>
@@ -192,18 +227,20 @@ function AddFindingForm({ onClose }: { onClose: () => void }) {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs font-medium">Responsable</Label>
-              <Input placeholder="Nom / fonction..." className="h-9 text-sm" />
+              <Input placeholder="Nom / fonction..." className="h-9 text-sm" value={responsable} onChange={e => setResponsable(e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium">Échéance</Label>
-              <Input type="date" className="h-9 text-sm" />
+              <Input type="date" className="h-9 text-sm" value={echeance} onChange={e => setEcheance(e.target.value)} />
             </div>
           </div>
 
+          {error && <p className="text-xs text-red-600">{error}</p>}
+
           <div className="flex gap-2 pt-1">
             <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose}>Annuler</Button>
-            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={onClose}>
-              <Send className="h-3 w-3" /> Enregistrer
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSubmit} disabled={loading}>
+              <Send className="h-3 w-3" /> {loading ? 'Enregistrement...' : 'Enregistrer'}
             </Button>
           </div>
         </div>
@@ -219,19 +256,21 @@ export default function FindingsPage() {
   const [showForm, setShowForm]   = useState(false);
   const [selected, setSelected]   = useState<typeof findings[0] | null>(null);
   const [expanded, setExpanded]   = useState<number | null>(null);
+  const [findingList, setFindingList] = useState(findings);
+  const handleAdd = (f: any) => setFindingList(prev => [f, ...prev]);
 
-  const clotureCount = findings.filter(f => ['cloturee', 'verifiee'].includes(f.statut)).length;
-  const tauxCloture  = Math.round((clotureCount / findings.length) * 100);
+  const clotureCount = findingList.filter(f => ['cloturee', 'verifiee'].includes(f.statut)).length;
+  const tauxCloture  = Math.round((clotureCount / findingList.length) * 100);
 
   const stats = {
-    total:       findings.length,
-    nc_majeures: findings.filter(f => f.type === 'nc_majeure').length,
-    nc_mineures: findings.filter(f => f.type === 'nc_mineure').length,
-    observations:findings.filter(f => f.type === 'observation').length,
+    total:       findingList.length,
+    nc_majeures: findingList.filter(f => f.type === 'nc_majeure').length,
+    nc_mineures: findingList.filter(f => f.type === 'nc_mineure').length,
+    observations:findingList.filter(f => f.type === 'observation').length,
     tauxCloture,
   };
 
-  const filtered = findings.filter(f => {
+  const filtered = findingList.filter(f => {
     const statutFilter = tabFilters[activeTab];
     const matchStatut  = !statutFilter?.length || statutFilter.includes(f.statut);
     const matchSearch  =
@@ -571,7 +610,7 @@ export default function FindingsPage() {
       </Tabs>
 
       <AnimatePresence>
-        {showForm && <AddFindingForm onClose={() => setShowForm(false)} />}
+        {showForm && <AddFindingForm onClose={() => setShowForm(false)} onAdd={handleAdd} />}
       </AnimatePresence>
     </div>
   );

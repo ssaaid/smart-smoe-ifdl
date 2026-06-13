@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { downloadExport } from '@/lib/export';
+import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Smile, Plus, Download, TrendingUp, TrendingDown, Minus,
@@ -124,7 +125,38 @@ function TrendIcon({ trend }: { trend: number }) {
 }
 
 // ── New Survey Form Modal ─────────────────────────────────────
-function NewSurveyForm({ onClose }: { onClose: () => void }) {
+function NewSurveyForm({ onClose, onAdd }: { onClose: () => void; onAdd: (s: any) => void }) {
+  const [titre, setTitre] = useState('');
+  const [type, setType] = useState('etudiant');
+  const [nbCible, setNbCible] = useState('60');
+  const [dateDebut, setDateDebut] = useState('');
+  const [dateFin, setDateFin] = useState('');
+  const [description, setDescription] = useState('');
+  const [diffusion, setDiffusion] = useState('online');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async () => {
+    if (!titre.trim() || !dateDebut || !dateFin) { setError('Le titre et les dates sont requis.'); return; }
+    setLoading(true); setError('');
+    try {
+      const { data } = await api.post('/satisfaction', {
+        titre, type, statut: 'preparation',
+        date_debut: dateDebut, date_fin: dateFin,
+        nb_reponses: 0, nb_cible: parseInt(nbCible) || 0,
+        score_moyen: null,
+        description: description || null,
+        mode_diffusion: diffusion,
+      });
+      onAdd(data);
+      onClose();
+    } catch {
+      setError("Erreur lors de l'enregistrement. Veuillez réessayer.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <motion.div
@@ -144,13 +176,13 @@ function NewSurveyForm({ onClose }: { onClose: () => void }) {
         <div className="space-y-3">
           <div className="space-y-1">
             <Label className="text-xs font-medium">Titre de l'enquête *</Label>
-            <Input placeholder="ex: Satisfaction Étudiants S1 2026-2027" className="h-9 text-sm" />
+            <Input placeholder="ex: Satisfaction Étudiants S1 2026-2027" className="h-9 text-sm" value={titre} onChange={e => setTitre(e.target.value)} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs font-medium">Type de partie prenante *</Label>
-              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3" value={type} onChange={e => setType(e.target.value)}>
                 <option value="etudiant">Étudiant</option>
                 <option value="personnel">Personnel enseignant</option>
                 <option value="employeur">Employeur</option>
@@ -159,18 +191,18 @@ function NewSurveyForm({ onClose }: { onClose: () => void }) {
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium">Nombre cible de réponses</Label>
-              <Input type="number" placeholder="ex: 60" className="h-9 text-xs" />
+              <Input type="number" placeholder="ex: 60" className="h-9 text-xs" value={nbCible} onChange={e => setNbCible(e.target.value)} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs font-medium">Date de début *</Label>
-              <Input type="date" className="h-9 text-xs" />
+              <Input type="date" className="h-9 text-xs" value={dateDebut} onChange={e => setDateDebut(e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium">Date de fin *</Label>
-              <Input type="date" className="h-9 text-xs" />
+              <Input type="date" className="h-9 text-xs" value={dateFin} onChange={e => setDateFin(e.target.value)} />
             </div>
           </div>
 
@@ -179,12 +211,14 @@ function NewSurveyForm({ onClose }: { onClose: () => void }) {
             <textarea
               className="w-full h-20 rounded-lg border border-input bg-background text-sm px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Objectifs de l'enquête, contexte, instructions pour les répondants..."
+              value={description}
+              onChange={e => setDescription(e.target.value)}
             />
           </div>
 
           <div className="space-y-1">
             <Label className="text-xs font-medium">Mode de diffusion</Label>
-            <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+            <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3" value={diffusion} onChange={e => setDiffusion(e.target.value)}>
               <option value="online">En ligne (lien URL)</option>
               <option value="qrcode">QR Code</option>
               <option value="papier">Formulaire papier</option>
@@ -192,10 +226,12 @@ function NewSurveyForm({ onClose }: { onClose: () => void }) {
             </select>
           </div>
 
+          {error && <p className="text-xs text-red-600">{error}</p>}
+
           <div className="flex gap-2 pt-1">
             <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose}>Annuler</Button>
-            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={onClose}>
-              <Send className="h-3 w-3" /> Créer l'enquête
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSubmit} disabled={loading}>
+              <Send className="h-3 w-3" /> {loading ? 'Enregistrement...' : "Créer l'enquête"}
             </Button>
           </div>
         </div>
@@ -287,22 +323,24 @@ function SurveyRow({ survey }: { survey: typeof surveys[0] }) {
 // ── Main Page ─────────────────────────────────────────────────
 export default function SatisfactionPage() {
   const [showForm, setShowForm] = useState(false);
+  const [surveyList, setSurveyList] = useState(surveys);
+  const handleAdd = (s: any) => setSurveyList(prev => [...prev, s]);
 
-  const totalReponses = surveys.reduce((s, q) => s + q.nb_reponses, 0);
-  const scoredSurveys = surveys.filter(s => s.score_moyen !== null);
+  const totalReponses = surveyList.reduce((s, q) => s + q.nb_reponses, 0);
+  const scoredSurveys = surveyList.filter(s => s.score_moyen !== null);
   const scoreGlobal = scoredSurveys.length > 0
     ? scoredSurveys.reduce((s, q) => s + (q.score_moyen ?? 0), 0) / scoredSurveys.length
     : 0;
-  const activeCount = surveys.filter(s => s.statut === 'actif').length;
+  const activeCount = surveyList.filter(s => s.statut === 'actif').length;
 
   // Overall trend vs N-1 (derived from partyScores)
   const avgTrend = partyScores.reduce((s, p) => s + p.trend, 0) / partyScores.length;
 
   const filterSurveys = (tab: string) => {
-    if (tab === 'actives')      return surveys.filter(s => s.statut === 'actif');
-    if (tab === 'terminees')    return surveys.filter(s => s.statut === 'termine');
-    if (tab === 'preparation')  return surveys.filter(s => s.statut === 'preparation');
-    return surveys;
+    if (tab === 'actives')      return surveyList.filter(s => s.statut === 'actif');
+    if (tab === 'terminees')    return surveyList.filter(s => s.statut === 'termine');
+    if (tab === 'preparation')  return surveyList.filter(s => s.statut === 'preparation');
+    return surveyList;
   };
 
   return (
@@ -532,13 +570,13 @@ export default function SatisfactionPage() {
         <div className="flex items-center justify-between gap-4">
           <TabsList className="h-9">
             <TabsTrigger value="actives"     className="text-xs">
-              Actives ({surveys.filter(s => s.statut === 'actif').length})
+              Actives ({surveyList.filter(s => s.statut === 'actif').length})
             </TabsTrigger>
             <TabsTrigger value="terminees"   className="text-xs">
-              Terminées ({surveys.filter(s => s.statut === 'termine').length})
+              Terminées ({surveyList.filter(s => s.statut === 'termine').length})
             </TabsTrigger>
             <TabsTrigger value="preparation" className="text-xs">
-              En préparation ({surveys.filter(s => s.statut === 'preparation').length})
+              En préparation ({surveyList.filter(s => s.statut === 'preparation').length})
             </TabsTrigger>
           </TabsList>
         </div>
@@ -563,7 +601,7 @@ export default function SatisfactionPage() {
 
       {/* New survey modal */}
       <AnimatePresence>
-        {showForm && <NewSurveyForm onClose={() => setShowForm(false)} />}
+        {showForm && <NewSurveyForm onClose={() => setShowForm(false)} onAdd={handleAdd} />}
       </AnimatePresence>
     </div>
   );

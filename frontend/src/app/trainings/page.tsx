@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { downloadExport } from '@/lib/export';
+import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   GraduationCap, Plus, Search, Filter, Star, StarHalf,
@@ -101,7 +102,42 @@ function StarRating({ score }: { score: number }) {
 }
 
 // ── Add Training Modal ─────────────────────────────────────────
-function AddTrainingForm({ onClose }: { onClose: () => void }) {
+function AddTrainingForm({ onClose, onAdd }: { onClose: () => void; onAdd: (t: any) => void }) {
+  const [titre, setTitre] = useState('');
+  const [type, setType] = useState('interne');
+  const [capacite, setCapacite] = useState('20');
+  const [formateur, setFormateur] = useState('');
+  const [dateDebut, setDateDebut] = useState('');
+  const [dateFin, setDateFin] = useState('');
+  const [lieu, setLieu] = useState('');
+  const [nbHeures, setNbHeures] = useState('8');
+  const [budget, setBudget] = useState('0');
+  const [objectifs, setObjectifs] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async () => {
+    if (!titre.trim() || !dateDebut || !dateFin) { setError('Le titre et les dates sont requis.'); return; }
+    setLoading(true); setError('');
+    try {
+      const { data } = await api.post('/trainings', {
+        titre, type, capacite: parseInt(capacite) || 20,
+        formateur: formateur || null,
+        date_debut: dateDebut, date_fin: dateFin,
+        lieu: lieu || null, nb_heures: parseInt(nbHeures) || 0,
+        cout: parseInt(budget) || 0,
+        objectifs: objectifs || null,
+        statut: 'planifie', participants: [],
+      });
+      onAdd(data);
+      onClose();
+    } catch {
+      setError("Erreur lors de l'enregistrement. Veuillez réessayer.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <motion.div
@@ -119,12 +155,12 @@ function AddTrainingForm({ onClose }: { onClose: () => void }) {
         <div className="space-y-3">
           <div className="space-y-1">
             <Label className="text-xs font-medium">Titre de la formation *</Label>
-            <Input placeholder="Ex. Formation Auditeur Interne..." className="h-9 text-sm" />
+            <Input placeholder="Ex. Formation Auditeur Interne..." className="h-9 text-sm" value={titre} onChange={e => setTitre(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs font-medium">Type</Label>
-              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3" value={type} onChange={e => setType(e.target.value)}>
                 <option value="interne">Interne</option>
                 <option value="externe">Externe</option>
                 <option value="elearning">E-learning</option>
@@ -132,48 +168,51 @@ function AddTrainingForm({ onClose }: { onClose: () => void }) {
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium">Capacité (personnes)</Label>
-              <Input type="number" placeholder="20" className="h-9 text-sm" />
+              <Input type="number" placeholder="20" className="h-9 text-sm" value={capacite} onChange={e => setCapacite(e.target.value)} />
             </div>
           </div>
           <div className="space-y-1">
             <Label className="text-xs font-medium">Formateur / Organisme</Label>
-            <Input placeholder="Nom du formateur ou organisme..." className="h-9 text-sm" />
+            <Input placeholder="Nom du formateur ou organisme..." className="h-9 text-sm" value={formateur} onChange={e => setFormateur(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Date début</Label>
-              <Input type="date" className="h-9 text-sm" />
+              <Label className="text-xs font-medium">Date début *</Label>
+              <Input type="date" className="h-9 text-sm" value={dateDebut} onChange={e => setDateDebut(e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Date fin</Label>
-              <Input type="date" className="h-9 text-sm" />
+              <Label className="text-xs font-medium">Date fin *</Label>
+              <Input type="date" className="h-9 text-sm" value={dateFin} onChange={e => setDateFin(e.target.value)} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs font-medium">Lieu / Modalité</Label>
-              <Input placeholder="ESEF Berrechid / En ligne..." className="h-9 text-sm" />
+              <Input placeholder="ESEF Berrechid / En ligne..." className="h-9 text-sm" value={lieu} onChange={e => setLieu(e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium">Heures de formation</Label>
-              <Input type="number" placeholder="8" className="h-9 text-sm" />
+              <Input type="number" placeholder="8" className="h-9 text-sm" value={nbHeures} onChange={e => setNbHeures(e.target.value)} />
             </div>
           </div>
           <div className="space-y-1">
             <Label className="text-xs font-medium">Budget (MAD)</Label>
-            <Input type="number" placeholder="0" className="h-9 text-sm" />
+            <Input type="number" placeholder="0" className="h-9 text-sm" value={budget} onChange={e => setBudget(e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label className="text-xs font-medium">Objectifs pédagogiques</Label>
             <textarea
               className="w-full h-20 rounded-lg border border-input bg-background text-sm px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Décrire les objectifs attendus de cette formation..."
+              value={objectifs}
+              onChange={e => setObjectifs(e.target.value)}
             />
           </div>
+          {error && <p className="text-xs text-red-600">{error}</p>}
           <div className="flex gap-2 pt-1">
             <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose}>Annuler</Button>
-            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={onClose}>
-              <Send className="h-3 w-3" /> Planifier
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSubmit} disabled={loading}>
+              <Send className="h-3 w-3" /> {loading ? 'Enregistrement...' : 'Planifier'}
             </Button>
           </div>
         </div>
@@ -250,8 +289,10 @@ function TrainingCard({ training }: { training: typeof trainings[0] }) {
 export default function TrainingsPage() {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [trainingList, setTrainingList] = useState(trainings);
+  const handleAdd = (t: any) => setTrainingList(prev => [t, ...prev]);
 
-  const filtered = (tab: string) => trainings.filter(t => {
+  const filtered = (tab: string) => trainingList.filter(t => {
     const matchSearch = t.titre.toLowerCase().includes(search.toLowerCase()) ||
       t.formateur.toLowerCase().includes(search.toLowerCase());
     const matchTab = tab === 'toutes' || t.statut === tab ||
@@ -262,14 +303,14 @@ export default function TrainingsPage() {
   });
 
   const stats = {
-    total:         trainings.length,
-    en_cours:      trainings.filter(t => t.statut === 'en_cours').length,
-    termine:       trainings.filter(t => t.statut === 'termine').length,
-    heures_total:  trainings.reduce((s, t) => s + t.nb_heures, 0),
-    budget_total:  trainings.reduce((s, t) => s + t.cout, 0),
+    total:         trainingList.length,
+    en_cours:      trainingList.filter(t => t.statut === 'en_cours').length,
+    termine:       trainingList.filter(t => t.statut === 'termine').length,
+    heures_total:  trainingList.reduce((s, t) => s + t.nb_heures, 0),
+    budget_total:  trainingList.reduce((s, t) => s + t.cout, 0),
   };
 
-  const upcomingTrainings = trainings
+  const upcomingTrainings = trainingList
     .filter(t => t.statut === 'planifie')
     .sort((a, b) => new Date(a.date_debut).getTime() - new Date(b.date_debut).getTime())
     .slice(0, 3);
@@ -446,10 +487,10 @@ export default function TrainingsPage() {
 
         <Tabs defaultValue="toutes">
           <TabsList className="h-9">
-            <TabsTrigger value="toutes"    className="text-xs">Toutes ({trainings.length})</TabsTrigger>
-            <TabsTrigger value="planifie"  className="text-xs">Planifiées ({trainings.filter(t => t.statut === 'planifie').length})</TabsTrigger>
-            <TabsTrigger value="en_cours"  className="text-xs">En cours ({trainings.filter(t => t.statut === 'en_cours').length})</TabsTrigger>
-            <TabsTrigger value="termine"   className="text-xs">Terminées ({trainings.filter(t => t.statut === 'termine').length})</TabsTrigger>
+            <TabsTrigger value="toutes"    className="text-xs">Toutes ({trainingList.length})</TabsTrigger>
+            <TabsTrigger value="planifie"  className="text-xs">Planifiées ({trainingList.filter(t => t.statut === 'planifie').length})</TabsTrigger>
+            <TabsTrigger value="en_cours"  className="text-xs">En cours ({trainingList.filter(t => t.statut === 'en_cours').length})</TabsTrigger>
+            <TabsTrigger value="termine"   className="text-xs">Terminées ({trainingList.filter(t => t.statut === 'termine').length})</TabsTrigger>
           </TabsList>
 
           {(['toutes', 'planifie', 'en_cours', 'termine'] as const).map(tab => (
@@ -474,7 +515,7 @@ export default function TrainingsPage() {
       </div>
 
       <AnimatePresence>
-        {showForm && <AddTrainingForm onClose={() => setShowForm(false)} />}
+        {showForm && <AddTrainingForm onClose={() => setShowForm(false)} onAdd={handleAdd} />}
       </AnimatePresence>
     </div>
   );

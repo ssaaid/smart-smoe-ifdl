@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { downloadExport } from '@/lib/export';
+import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   AlertTriangle, Plus, Search, Filter, Calendar, User,
@@ -175,7 +176,42 @@ function StatutWorkflow({ statut }: { statut: string }) {
 }
 
 // ── Add Risk Form (Modal) ──────────────────────────────────────
-function AddRiskForm({ onClose }: { onClose: () => void }) {
+function AddRiskForm({ onClose, onAdd }: { onClose: () => void; onAdd: (r: any) => void }) {
+  const [type, setType]               = useState('risque');
+  const [categorie, setCategorie]     = useState('operationnel');
+  const [libelle, setLibelle]         = useState('');
+  const [description, setDescription] = useState('');
+  const [probabilite, setProbabilite] = useState('1');
+  const [gravite, setGravite]         = useState('1');
+  const [plan, setPlan]               = useState('');
+  const [responsable, setResponsable] = useState('');
+  const [echeance, setEcheance]       = useState('');
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState('');
+
+  const handleSubmit = async () => {
+    if (!libelle.trim()) { setError('Le libellé est requis.'); return; }
+    setLoading(true);
+    setError('');
+    try {
+      const p = Number(probabilite), g = Number(gravite);
+      const { data } = await api.post('/risks', {
+        type, categorie, libelle, description,
+        probabilite: p, gravite: g, criticite: p * g,
+        plan_traitement: plan || null,
+        statut: 'identifie',
+        code: (type === 'opportunite' ? 'O' : 'R') + '-' + Date.now().toString().slice(-4),
+        echeance: echeance || null,
+      });
+      onAdd(data);
+      onClose();
+    } catch {
+      setError('Erreur lors de l\'enregistrement. Vérifiez la connexion au serveur.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <motion.div
@@ -191,18 +227,24 @@ function AddRiskForm({ onClose }: { onClose: () => void }) {
           <button onClick={onClose}><X className="h-4 w-4 text-muted-foreground" /></button>
         </div>
 
+        {error && (
+          <div className="mb-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            {error}
+          </div>
+        )}
+
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs font-medium">Type *</Label>
-              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+              <select value={type} onChange={e => setType(e.target.value)} className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
                 <option value="risque">Risque</option>
                 <option value="opportunite">Opportunité</option>
               </select>
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium">Catégorie *</Label>
-              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+              <select value={categorie} onChange={e => setCategorie(e.target.value)} className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
                 <option value="operationnel">Opérationnel</option>
                 <option value="financier">Financier</option>
                 <option value="conformite">Conformité</option>
@@ -214,12 +256,13 @@ function AddRiskForm({ onClose }: { onClose: () => void }) {
 
           <div className="space-y-1">
             <Label className="text-xs font-medium">Libellé *</Label>
-            <Input placeholder="Intitulé court du risque ou de l'opportunité..." className="h-9 text-sm" />
+            <Input value={libelle} onChange={e => setLibelle(e.target.value)} placeholder="Intitulé court du risque ou de l'opportunité..." className="h-9 text-sm" />
           </div>
 
           <div className="space-y-1">
             <Label className="text-xs font-medium">Description</Label>
             <textarea
+              value={description} onChange={e => setDescription(e.target.value)}
               className="w-full h-20 rounded-lg border border-input bg-background text-sm px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Contexte, causes, conséquences potentielles..."
             />
@@ -228,13 +271,13 @@ function AddRiskForm({ onClose }: { onClose: () => void }) {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs font-medium">Probabilité (1–5)</Label>
-              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+              <select value={probabilite} onChange={e => setProbabilite(e.target.value)} className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
                 {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
               </select>
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium">Impact (1–5)</Label>
-              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+              <select value={gravite} onChange={e => setGravite(e.target.value)} className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
                 {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
               </select>
             </div>
@@ -243,6 +286,7 @@ function AddRiskForm({ onClose }: { onClose: () => void }) {
           <div className="space-y-1">
             <Label className="text-xs font-medium">Plan de traitement</Label>
             <textarea
+              value={plan} onChange={e => setPlan(e.target.value)}
               className="w-full h-16 rounded-lg border border-input bg-background text-sm px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Actions planifiées pour traiter ce risque / capitaliser sur cette opportunité..."
             />
@@ -251,30 +295,18 @@ function AddRiskForm({ onClose }: { onClose: () => void }) {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs font-medium">Responsable</Label>
-              <Input placeholder="Nom / fonction..." className="h-9 text-sm" />
+              <Input value={responsable} onChange={e => setResponsable(e.target.value)} placeholder="Nom / fonction..." className="h-9 text-sm" />
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium">Échéance</Label>
-              <Input type="date" className="h-9 text-sm" />
+              <Input type="date" value={echeance} onChange={e => setEcheance(e.target.value)} className="h-9 text-sm" />
             </div>
           </div>
 
-          <div className="space-y-1">
-            <Label className="text-xs font-medium">Processus concerné</Label>
-            <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
-              <option value="">Sélectionner...</option>
-              <option value="PR-01">PR-01 — Pilotage</option>
-              <option value="PR-02">PR-02 — Réalisation pédagogique</option>
-              <option value="PR-03">PR-03 — Support</option>
-              <option value="PR-04">PR-04 — Évaluation</option>
-              <option value="Tous">Tous les processus</option>
-            </select>
-          </div>
-
           <div className="flex gap-2 pt-1">
-            <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose}>Annuler</Button>
-            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={onClose}>
-              <Plus className="h-3 w-3" /> Enregistrer
+            <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose} disabled={loading}>Annuler</Button>
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSubmit} disabled={loading}>
+              <Plus className="h-3 w-3" /> {loading ? 'Enregistrement...' : 'Enregistrer'}
             </Button>
           </div>
         </div>
@@ -285,12 +317,15 @@ function AddRiskForm({ onClose }: { onClose: () => void }) {
 
 // ── Main Page ──────────────────────────────────────────────────
 export default function RisksPage() {
+  const [riskList, setRiskList]   = useState(risks);
   const [search, setSearch]       = useState('');
   const [filter, setFilter]       = useState<'all' | 'risque' | 'opportunite'>('all');
   const [showForm, setShowForm]   = useState(false);
   const [expanded, setExpanded]   = useState<number | null>(null);
 
-  const filtered = risks.filter(r => {
+  const handleAdd = (r: any) => setRiskList(prev => [r, ...prev]);
+
+  const filtered = riskList.filter(r => {
     const matchType   = filter === 'all' || r.type === filter;
     const matchSearch = r.libelle.toLowerCase().includes(search.toLowerCase()) ||
                         r.code.toLowerCase().includes(search.toLowerCase());
@@ -298,10 +333,10 @@ export default function RisksPage() {
   });
 
   const stats = {
-    total:       risks.length,
-    critiques:   risks.filter(r => r.type === 'risque' && r.probabilite * r.impact >= 16).length,
-    opportunites:risks.filter(r => r.type === 'opportunite').length,
-    traitement:  risks.filter(r => r.statut === 'traitement').length,
+    total:       riskList.length,
+    critiques:   riskList.filter(r => r.type === 'risque' && r.probabilite * r.impact >= 16).length,
+    opportunites:riskList.filter(r => r.type === 'opportunite').length,
+    traitement:  riskList.filter(r => r.statut === 'traitement').length,
   };
 
   return (
@@ -528,7 +563,7 @@ export default function RisksPage() {
       </div>
 
       <AnimatePresence>
-        {showForm && <AddRiskForm onClose={() => setShowForm(false)} />}
+        {showForm && <AddRiskForm onClose={() => setShowForm(false)} onAdd={handleAdd} />}
       </AnimatePresence>
     </div>
   );

@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { downloadExport } from '@/lib/export';
+import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Target, Plus, Search, Filter, TrendingUp, TrendingDown,
@@ -179,6 +180,8 @@ const FORM_INIT: NouveauKpiForm = {
 function NouveauKpiModal({ onClose, onAdd }: { onClose: () => void; onAdd: (kpi: typeof kpiList[0]) => void }) {
   const [form, setForm] = useState<NouveauKpiForm>(FORM_INIT);
   const [errors, setErrors] = useState<Partial<NouveauKpiForm>>({});
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState('');
 
   const set = (field: keyof NouveauKpiForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [field]: e.target.value }));
@@ -195,24 +198,27 @@ function NouveauKpiModal({ onClose, onAdd }: { onClose: () => void; onAdd: (kpi:
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
-    onAdd({
-      id: Date.now(),
-      code: form.code.toUpperCase(),
-      libelle: form.libelle,
-      valeur_actuelle: 0,
-      valeur_cible: Number(form.valeur_cible),
-      seuil_alerte: Number(form.seuil_alerte),
-      unite: form.unite,
-      statut: 'orange',
-      frequence: form.frequence,
-      process: form.process,
-      axe: form.axe,
-      responsable: form.responsable,
-      historique: [],
-    });
-    onClose();
+    setLoading(true);
+    setApiError('');
+    try {
+      const { data } = await api.post('/kpis', {
+        libelle: form.libelle,
+        code: form.code.toUpperCase(),
+        unite: form.unite,
+        valeur_cible: Number(form.valeur_cible),
+        seuil_alerte: Number(form.seuil_alerte),
+        frequence: form.frequence,
+        statut: 'orange',
+      });
+      onAdd({ ...data, process: form.process, axe: form.axe, responsable: form.responsable, historique: [] });
+      onClose();
+    } catch {
+      setApiError('Erreur lors de la création. Vérifiez la connexion au serveur.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -299,12 +305,18 @@ function NouveauKpiModal({ onClose, onAdd }: { onClose: () => void; onAdd: (kpi:
             </div>
           </div>
 
+          {apiError && (
+            <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {apiError}
+            </div>
+          )}
+
           <Separator />
 
           <div className="flex gap-2 pt-1">
-            <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose}>Annuler</Button>
-            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSubmit}>
-              <Save className="h-3 w-3" /> Créer le KPI
+            <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose} disabled={loading}>Annuler</Button>
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSubmit} disabled={loading}>
+              <Save className="h-3 w-3" /> {loading ? 'Enregistrement...' : 'Créer le KPI'}
             </Button>
           </div>
         </div>

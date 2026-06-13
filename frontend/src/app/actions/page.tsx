@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { downloadExport } from '@/lib/export';
+import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Wrench, Plus, Search, Filter, Download, X, User, Calendar,
@@ -139,7 +140,40 @@ const statutConfig: Record<string, { label: string; badge: string; dot: string }
 };
 
 // ── Add Action Form Modal ─────────────────────────────────────
-function AddActionForm({ onClose }: { onClose: () => void }) {
+function AddActionForm({ onClose, onAdd }: { onClose: () => void; onAdd: (a: any) => void }) {
+  const [type, setType]               = useState('corrective');
+  const [source, setSource]           = useState('');
+  const [titre, setTitre]             = useState('');
+  const [description, setDescription] = useState('');
+  const [responsable, setResponsable] = useState('');
+  const [echeance, setEcheance]       = useState('');
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState('');
+
+  const handleSubmit = async () => {
+    if (!titre.trim() || !description.trim()) {
+      setError('Le titre et la description sont requis.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const { data } = await api.post('/corrective-actions', {
+        type, titre, description,
+        statut: 'ouverte',
+        avancement: 0,
+        code: 'AC-' + Date.now().toString().slice(-6),
+        echeance: echeance || null,
+      });
+      onAdd(data);
+      onClose();
+    } catch {
+      setError('Erreur lors de l\'enregistrement. Vérifiez la connexion au serveur.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <motion.div
@@ -156,11 +190,17 @@ function AddActionForm({ onClose }: { onClose: () => void }) {
           <button onClick={onClose}><X className="h-4 w-4 text-muted-foreground" /></button>
         </div>
 
+        {error && (
+          <div className="mb-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            {error}
+          </div>
+        )}
+
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs font-medium">Type d'action *</Label>
-              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+              <select value={type} onChange={e => setType(e.target.value)} className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
                 <option value="corrective">Corrective</option>
                 <option value="preventive">Préventive</option>
                 <option value="amelioration">Amélioration</option>
@@ -168,18 +208,19 @@ function AddActionForm({ onClose }: { onClose: () => void }) {
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium">Source / Origine</Label>
-              <Input placeholder="ex: NC-2026-xxx" className="h-9 text-xs" />
+              <Input value={source} onChange={e => setSource(e.target.value)} placeholder="ex: NC-2026-xxx" className="h-9 text-xs" />
             </div>
           </div>
 
           <div className="space-y-1">
             <Label className="text-xs font-medium">Titre de l'action *</Label>
-            <Input placeholder="Description courte de l'action..." className="h-9 text-sm" />
+            <Input value={titre} onChange={e => setTitre(e.target.value)} placeholder="Description courte de l'action..." className="h-9 text-sm" />
           </div>
 
           <div className="space-y-1">
             <Label className="text-xs font-medium">Description détaillée *</Label>
             <textarea
+              value={description} onChange={e => setDescription(e.target.value)}
               className="w-full h-24 rounded-lg border border-input bg-background text-sm px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Décrivez l'action à réaliser, le contexte, les objectifs attendus..."
             />
@@ -187,30 +228,19 @@ function AddActionForm({ onClose }: { onClose: () => void }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Responsable *</Label>
-              <Input placeholder="Nom / fonction" className="h-9 text-xs" />
+              <Label className="text-xs font-medium">Responsable</Label>
+              <Input value={responsable} onChange={e => setResponsable(e.target.value)} placeholder="Nom / fonction" className="h-9 text-xs" />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Échéance *</Label>
-              <Input type="date" className="h-9 text-xs" />
+              <Label className="text-xs font-medium">Échéance</Label>
+              <Input type="date" value={echeance} onChange={e => setEcheance(e.target.value)} className="h-9 text-xs" />
             </div>
-          </div>
-
-          <div className="space-y-1">
-            <Label className="text-xs font-medium">Processus concerné</Label>
-            <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
-              <option value="">Sélectionner...</option>
-              <option value="PR-01">PR-01 — Pilotage</option>
-              <option value="PR-02">PR-02 — Réalisation pédagogique</option>
-              <option value="PR-03">PR-03 — Support</option>
-              <option value="PR-04">PR-04 — Évaluation</option>
-            </select>
           </div>
 
           <div className="flex gap-2 pt-1">
-            <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose}>Annuler</Button>
-            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={onClose}>
-              <Send className="h-3 w-3" /> Créer l'action
+            <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose} disabled={loading}>Annuler</Button>
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSubmit} disabled={loading}>
+              <Send className="h-3 w-3" /> {loading ? 'Enregistrement...' : "Créer l'action"}
             </Button>
           </div>
         </div>
@@ -397,30 +427,33 @@ function ActionCard({
 
 // ── Main Page ─────────────────────────────────────────────────
 export default function ActionsPage() {
+  const [actionList, setActionList] = useState(actions);
   const [search,   setSearch]   = useState('');
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
 
+  const handleAdd = (a: any) => setActionList(prev => [a, ...prev]);
+
   const stats = {
-    total:     actions.length,
-    ouvertes:  actions.filter(a => a.statut === 'ouverte').length,
-    en_cours:  actions.filter(a => a.statut === 'en_cours').length,
-    cloturees: actions.filter(a => a.statut === 'cloturee').length,
-    efficaces: actions.filter(a => a.efficacite === 'efficace').length,
-    taux:      actions.filter(a => a.statut === 'cloturee').length > 0
+    total:     actionList.length,
+    ouvertes:  actionList.filter(a => a.statut === 'ouverte').length,
+    en_cours:  actionList.filter(a => a.statut === 'en_cours').length,
+    cloturees: actionList.filter(a => a.statut === 'cloturee').length,
+    efficaces: actionList.filter(a => a.efficacite === 'efficace').length,
+    taux:      actionList.filter(a => a.statut === 'cloturee').length > 0
       ? Math.round(
-          (actions.filter(a => a.efficacite === 'efficace').length /
-           actions.filter(a => a.statut === 'cloturee').length) * 100
+          (actionList.filter(a => a.efficacite === 'efficace').length /
+           actionList.filter(a => a.statut === 'cloturee').length) * 100
         )
       : 0,
   };
 
   const filterActions = (tab: string) =>
-    actions.filter(a => {
+    actionList.filter(a => {
       const matchSearch =
         a.titre.toLowerCase().includes(search.toLowerCase()) ||
         a.code.toLowerCase().includes(search.toLowerCase()) ||
-        a.source.toLowerCase().includes(search.toLowerCase());
+        (a.source ?? '').toLowerCase().includes(search.toLowerCase());
       if (!matchSearch) return false;
       if (tab === 'toutes')   return true;
       if (tab === 'ouvertes') return a.statut === 'ouverte';
@@ -523,7 +556,7 @@ export default function ActionsPage() {
 
       {/* Add form modal */}
       <AnimatePresence>
-        {showForm && <AddActionForm onClose={() => setShowForm(false)} />}
+        {showForm && <AddActionForm onClose={() => setShowForm(false)} onAdd={handleAdd} />}
       </AnimatePresence>
     </div>
   );

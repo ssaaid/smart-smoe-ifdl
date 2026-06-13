@@ -6,6 +6,7 @@
 
 import { useState, useMemo } from 'react';
 import { downloadExport } from '@/lib/export';
+import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FolderOpen, Plus, Search, Filter, Eye, Download, Edit2,
@@ -81,16 +82,32 @@ type NewDoc = { reference: string; titre: string; version: string; type: string;
 function UploadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (doc: NewDoc) => void }) {
   const [form, setForm] = useState<NewDoc>({ reference: '', titre: '', version: '1.0', type: '', process: '', auteur: '' });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const set = (k: keyof NewDoc, v: string) => setForm(f => ({ ...f, [k]: v }));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.reference || !form.titre || !form.type || !form.process) {
       setError('Veuillez remplir tous les champs obligatoires (*)');
       return;
     }
-    onAdd(form);
-    onClose();
+    setLoading(true);
+    setError('');
+    try {
+      const { data } = await api.post('/documents', {
+        reference: form.reference,
+        titre: form.titre,
+        version: form.version || '1.0',
+        type: form.type,
+        statut: 'brouillon',
+      });
+      onAdd({ ...form, ...data });
+      onClose();
+    } catch {
+      setError('Erreur lors de l\'ajout. Vérifiez la connexion au serveur.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -176,8 +193,8 @@ function UploadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (doc: New
             <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose}>
               Annuler
             </Button>
-            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSubmit}>
-              <Upload className="h-3 w-3" /> Ajouter le document
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSubmit} disabled={loading}>
+              <Upload className="h-3 w-3" /> {loading ? 'Enregistrement...' : 'Ajouter le document'}
             </Button>
           </div>
         </div>

@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { downloadExport } from '@/lib/export';
+import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageSquare, Plus, Search, Filter, Clock, CheckCircle2,
@@ -109,7 +110,36 @@ const prioriteConfig: Record<string, string> = {
 };
 
 // ── Depot Form ─────────────────────────────────────────────────
-function DepotForm({ onClose }: { onClose: () => void }) {
+function DepotForm({ onClose, onAdd }: { onClose: () => void; onAdd: (c: any) => void }) {
+  const [type, setType]               = useState('reclamation');
+  const [objet, setObjet]             = useState('');
+  const [description, setDescription] = useState('');
+  const [source, setSource]           = useState('etudiant');
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState('');
+
+  const handleSubmit = async () => {
+    if (!objet.trim() || !description.trim()) {
+      setError("L'objet et la description sont requis.");
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const { data } = await api.post('/complaints', {
+        type, objet, description, source,
+        statut: 'recu',
+        reference: 'REC-' + Date.now().toString().slice(-6),
+      });
+      onAdd(data);
+      onClose();
+    } catch {
+      setError('Erreur lors de la soumission. Vérifiez la connexion au serveur.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <motion.div
@@ -125,11 +155,17 @@ function DepotForm({ onClose }: { onClose: () => void }) {
           <button onClick={onClose}><X className="h-4 w-4 text-muted-foreground" /></button>
         </div>
 
+        {error && (
+          <div className="mb-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            {error}
+          </div>
+        )}
+
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs font-medium">Type</Label>
-              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+              <select value={type} onChange={e => setType(e.target.value)} className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
                 <option value="reclamation">Réclamation</option>
                 <option value="recours">Recours</option>
                 <option value="suggestion">Suggestion</option>
@@ -137,47 +173,29 @@ function DepotForm({ onClose }: { onClose: () => void }) {
               </select>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Priorité</Label>
-              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
-                <option value="normale">Normale</option>
-                <option value="haute">Haute</option>
-                <option value="urgente">Urgente</option>
-                <option value="basse">Basse</option>
+              <Label className="text-xs font-medium">Source</Label>
+              <select value={source} onChange={e => setSource(e.target.value)} className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+                <option value="etudiant">Étudiant</option>
+                <option value="parent">Parent</option>
+                <option value="personnel">Personnel</option>
+                <option value="partenaire">Partenaire</option>
+                <option value="autre">Autre</option>
               </select>
             </div>
           </div>
 
           <div className="space-y-1">
             <Label className="text-xs font-medium">Objet *</Label>
-            <Input placeholder="Résumé bref de la réclamation..." className="h-9 text-sm" />
+            <Input value={objet} onChange={e => setObjet(e.target.value)} placeholder="Résumé bref de la réclamation..." className="h-9 text-sm" />
           </div>
 
           <div className="space-y-1">
             <Label className="text-xs font-medium">Description détaillée *</Label>
             <textarea
+              value={description} onChange={e => setDescription(e.target.value)}
               className="w-full h-24 rounded-lg border border-input bg-background text-sm px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
               placeholder="Décrivez précisément votre réclamation, le contexte, les faits observés..."
             />
-          </div>
-
-          <div className="space-y-1">
-            <Label className="text-xs font-medium">Processus concerné</Label>
-            <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
-              <option value="">Sélectionner...</option>
-              <option value="PR-01">PR-01 — Pilotage</option>
-              <option value="PR-02">PR-02 — Réalisation pédagogique</option>
-              <option value="PR-03">PR-03 — Support</option>
-              <option value="PR-04">PR-04 — Évaluation</option>
-            </select>
-          </div>
-
-          <div className="space-y-1">
-            <Label className="text-xs font-medium">Pièces jointes (optionnel)</Label>
-            <div className="border-2 border-dashed border-border rounded-lg p-3 text-center cursor-pointer hover:bg-muted/30 transition-colors">
-              <FileText className="h-6 w-6 mx-auto text-muted-foreground mb-1" />
-              <p className="text-xs text-muted-foreground">Glisser-déposer ou cliquer pour joindre des fichiers</p>
-              <p className="text-[10px] text-muted-foreground/70 mt-0.5">PDF, JPG, PNG · Max 10 Mo</p>
-            </div>
           </div>
 
           <div className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-lg">
@@ -186,9 +204,9 @@ function DepotForm({ onClose }: { onClose: () => void }) {
           </div>
 
           <div className="flex gap-2 pt-1">
-            <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose}>Annuler</Button>
-            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={onClose}>
-              <Send className="h-3 w-3" /> Soumettre
+            <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose} disabled={loading}>Annuler</Button>
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSubmit} disabled={loading}>
+              <Send className="h-3 w-3" /> {loading ? 'Envoi...' : 'Soumettre'}
             </Button>
           </div>
         </div>
@@ -199,21 +217,27 @@ function DepotForm({ onClose }: { onClose: () => void }) {
 
 // ── Main Page ──────────────────────────────────────────────────
 export default function ComplaintsPage() {
+  const [complaintList, setComplaintList] = useState(complaints);
   const [search, setSearch]     = useState('');
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState<typeof complaints[0] | null>(null);
 
-  const filtered = complaints.filter(c =>
+  const handleAdd = (c: any) => setComplaintList(prev => [c, ...prev]);
+
+  const filtered = complaintList.filter(c =>
     c.objet.toLowerCase().includes(search.toLowerCase()) ||
     c.reference.toLowerCase().includes(search.toLowerCase())
   );
 
   const stats = {
-    total:    complaints.length,
-    deposee:  complaints.filter(c => c.statut === 'deposee').length,
-    en_cours: complaints.filter(c => c.statut === 'en_cours').length,
-    resolue:  complaints.filter(c => ['resolue', 'cloturee'].includes(c.statut)).length,
-    delai_moy: Math.round(complaints.filter(c => c.delai).reduce((s, c) => s + (c.delai ?? 0), 0) / complaints.filter(c => c.delai).length),
+    total:    complaintList.length,
+    deposee:  complaintList.filter(c => c.statut === 'deposee' || c.statut === 'recu').length,
+    en_cours: complaintList.filter(c => c.statut === 'en_cours').length,
+    resolue:  complaintList.filter(c => ['resolue', 'cloturee'].includes(c.statut)).length,
+    delai_moy: (() => {
+      const withDelai = complaintList.filter(c => c.delai);
+      return withDelai.length ? Math.round(withDelai.reduce((s, c) => s + (c.delai ?? 0), 0) / withDelai.length) : 0;
+    })(),
   };
 
   return (
@@ -412,7 +436,7 @@ export default function ComplaintsPage() {
       </div>
 
       <AnimatePresence>
-        {showForm && <DepotForm onClose={() => setShowForm(false)} />}
+        {showForm && <DepotForm onClose={() => setShowForm(false)} onAdd={handleAdd} />}
       </AnimatePresence>
     </div>
   );
