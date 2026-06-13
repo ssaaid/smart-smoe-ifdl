@@ -5,7 +5,6 @@
 'use client';
 
 import { useState } from 'react';
-import { downloadExport } from '@/lib/export';
 import { motion } from 'framer-motion';
 import {
   Shield, Award, TrendingUp, CheckCircle2, AlertCircle,
@@ -170,6 +169,133 @@ function IsoGauge({ score, niveau }: { score: number; niveau: number }) {
   );
 }
 
+// ── GAP Report Generator ────────────────────────────────────
+function printGapReport() {
+  const date = new Date().toLocaleDateString('fr-MA', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  const rowsGap = gapItems.map(item => `
+    <tr>
+      <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-family:monospace;font-size:12px;color:#6b7280">${item.code}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:12px">${item.titre}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:center">
+        <span style="background:${item.gap === 'majeur' ? '#fee2e2' : '#fef3c7'};color:${item.gap === 'majeur' ? '#b91c1c' : '#92400e'};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">
+          ${item.gap === 'majeur' ? 'Majeur' : 'Mineur'}
+        </span>
+      </td>
+      <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:center;font-weight:700;font-size:13px;color:${item.score < 70 ? '#dc2626' : '#d97706'}">${item.score}%</td>
+    </tr>
+  `).join('');
+
+  const rowsClauses = clausesData.map(c => `
+    <tr>
+      <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-family:monospace;font-size:12px;color:#6b7280">§${c.code}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;font-size:12px">${c.titre}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:center;font-weight:700;font-size:13px;color:${c.score >= c.cible ? '#16a34a' : c.score >= c.cible - 10 ? '#d97706' : '#dc2626'}">${c.score}%</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:center;font-size:12px;color:#6b7280">${c.cible}%</td>
+      <td style="padding:8px 10px;border-bottom:1px solid #e5e7eb;text-align:center">
+        <span style="background:${c.score >= c.cible ? '#dcfce7' : '#fee2e2'};color:${c.score >= c.cible ? '#166534' : '#b91c1c'};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">
+          ${c.score >= c.cible ? 'Conforme' : 'À améliorer'}
+        </span>
+      </td>
+    </tr>
+  `).join('');
+
+  const recs = [
+    { p: 'P1', action: 'Formaliser le processus de gestion des risques §6.1', impact: '+8%', ech: 'S1 2027' },
+    { p: 'P2', action: 'Mettre en place le système de revue de direction §9.3', impact: '+6%', ech: 'S1 2027' },
+    { p: 'P3', action: "Documenter le plan d'amélioration continue §10.2", impact: '+5%', ech: 'S2 2027' },
+    { p: 'P4', action: 'Renforcer la planification opérationnelle §8.2', impact: '+4%', ech: 'S2 2027' },
+    { p: 'P5', action: 'Améliorer la sensibilisation du personnel §7.3', impact: '+3%', ech: 'S1 2027' },
+  ];
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<title>Rapport GAP ISO 21001 — ESEF Berrechid</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color:#111827; background:#fff; padding:32px; }
+  h1 { font-size:20px; font-weight:700; color:#0d3b7a; }
+  h2 { font-size:14px; font-weight:700; color:#0d3b7a; margin:24px 0 10px; border-bottom:2px solid #0d3b7a; padding-bottom:4px; }
+  .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px; padding-bottom:16px; border-bottom:3px solid #0d3b7a; }
+  .logo-block p { font-size:11px; color:#6b7280; margin-top:2px; }
+  .score-block { text-align:right; }
+  .score-block .big { font-size:40px; font-weight:800; color:#0d3b7a; }
+  .score-block .lbl { font-size:11px; color:#6b7280; }
+  .kpis { display:flex; gap:12px; margin-bottom:20px; }
+  .kpi { flex:1; border:1px solid #e5e7eb; border-radius:8px; padding:12px; text-align:center; }
+  .kpi .val { font-size:22px; font-weight:700; }
+  .kpi .lbl { font-size:10px; color:#6b7280; margin-top:2px; }
+  table { width:100%; border-collapse:collapse; }
+  th { background:#f3f4f6; padding:8px 10px; text-align:left; font-size:11px; font-weight:600; color:#6b7280; text-transform:uppercase; letter-spacing:.04em; }
+  .rec-row { display:flex; align-items:flex-start; gap:10px; padding:8px 10px; border:1px solid #e5e7eb; border-radius:6px; margin-bottom:6px; }
+  .rec-num { width:26px; height:26px; border-radius:50%; background:#0d3b7a; color:#fff; font-size:10px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .rec-action { font-size:12px; font-weight:500; }
+  .rec-meta { font-size:10px; color:#6b7280; margin-top:2px; }
+  .footer { margin-top:32px; padding-top:12px; border-top:1px solid #e5e7eb; font-size:10px; color:#9ca3af; text-align:center; }
+  @media print { body { padding:16px; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo-block">
+    <h1>Rapport GAP Analysis — ISO 21001:2018</h1>
+    <p>ESEF Berrechid · Université Hassan 1er · Master IFDL</p>
+    <p>Généré le ${date}</p>
+  </div>
+  <div class="score-block">
+    <div class="big">${scoreGlobal}%</div>
+    <div class="lbl">SCORE GLOBAL ISO 21001</div>
+    <div style="margin-top:4px;font-size:12px;font-weight:600;color:${scoreGlobal >= 80 ? '#16a34a' : '#d97706'}">
+      Niveau ${niveauMaturite} — ${maturiteNiveaux[niveauMaturite - 1]?.label}
+    </div>
+  </div>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="val" style="color:#0d3b7a">${clausesData.length}</div><div class="lbl">Clauses évaluées</div></div>
+  <div class="kpi"><div class="val" style="color:#16a34a">${clausesData.filter(c => c.score >= c.cible).length}</div><div class="lbl">Conformes</div></div>
+  <div class="kpi"><div class="val" style="color:#dc2626">${gapItems.filter(g => g.gap === 'majeur').length}</div><div class="lbl">GAP majeurs</div></div>
+  <div class="kpi"><div class="val" style="color:#d97706">${gapItems.filter(g => g.gap === 'mineur').length}</div><div class="lbl">GAP mineurs</div></div>
+</div>
+
+<h2>1. Score par clause ISO 21001</h2>
+<table>
+  <thead><tr><th>Clause</th><th>Titre</th><th>Score</th><th>Cible</th><th>Statut</th></tr></thead>
+  <tbody>${rowsClauses}</tbody>
+</table>
+
+<h2>2. Écarts identifiés (GAP)</h2>
+<table>
+  <thead><tr><th>Clause</th><th>Description</th><th>Sévérité</th><th>Score actuel</th></tr></thead>
+  <tbody>${rowsGap}</tbody>
+</table>
+
+<h2>3. Recommandations prioritaires</h2>
+${recs.map(r => `
+<div class="rec-row">
+  <div class="rec-num">${r.p}</div>
+  <div>
+    <div class="rec-action">${r.action}</div>
+    <div class="rec-meta">Impact estimé : <strong>${r.impact}</strong> · Échéance : ${r.ech}</div>
+  </div>
+</div>`).join('')}
+
+<div class="footer">
+  SMART SMOE IFDL v1.0.0 · Système Intelligent de Management ISO 21001 · ESEF Berrechid
+</div>
+</body>
+</html>`;
+
+  const w = window.open('', '_blank', 'width=900,height=700');
+  if (!w) return;
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(() => { w.print(); }, 400);
+}
+
 // ── Main Page ───────────────────────────────────────────────
 export default function IsoCenterPage() {
   const [expandedClause, setExpandedClause] = useState<string | null>(null);
@@ -195,7 +321,7 @@ export default function IsoCenterPage() {
           <Button
             size="sm"
             className="text-xs gap-1"
-            onClick={() => downloadExport('iso-center', 'pdf', 'rapport-gap-iso21001.pdf')}
+            onClick={printGapReport}
           >
             <Download className="h-3.5 w-3.5" /> Rapport GAP
           </Button>
