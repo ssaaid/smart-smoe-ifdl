@@ -12,7 +12,7 @@ import {
   BarChart3, Plus, Search, Filter, FileText, Download,
   Eye, Share2, X, Calendar, User, CheckCircle2, Clock,
   ChevronRight, Send, Users, Star, TrendingUp, Award,
-  BookOpen, ClipboardList, Layers,
+  BookOpen, ClipboardList, Layers, Copy, Check,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import toast from 'react-hot-toast';
 
 // ── Mock data ─────────────────────────────────────────────────
 const reports = [
@@ -33,32 +34,139 @@ const reports = [
   { id: 6, titre: 'Revue de Direction S1 2026-2027 — Brouillon', type: 'revue_direction', statut: 'brouillon', auteur: 'Resp. Qualité', periode_debut: '2026-09-01', periode_fin: '2027-02-28', date_creation: '2026-06-01', nb_pages: 0, participants: [], decisions_cles: [] },
 ];
 
-// The most recent approved management review
 const lastReview = reports.find(r => r.type === 'revue_direction' && r.statut === 'approuve' && r.id === 1)!;
 
 const keyMetrics = [
-  { label: 'Score ISO 21001',       value: '84%',  color: 'text-green-600',  icon: <Award className="h-4 w-4" /> },
-  { label: 'NC clôturées',          value: '12/14', color: 'text-blue-600',   icon: <CheckCircle2 className="h-4 w-4" /> },
-  { label: 'Satisfaction moy.',     value: '4.1/5', color: 'text-amber-600',  icon: <Star className="h-4 w-4" /> },
-  { label: 'Formations réalisées',  value: '2/6',   color: 'text-primary',    icon: <TrendingUp className="h-4 w-4" /> },
+  { label: 'Score ISO 21001',      value: '84%',   color: 'text-green-600', icon: <Award className="h-4 w-4" /> },
+  { label: 'NC clôturées',         value: '12/14', color: 'text-blue-600',  icon: <CheckCircle2 className="h-4 w-4" /> },
+  { label: 'Satisfaction moy.',    value: '4.1/5', color: 'text-amber-600', icon: <Star className="h-4 w-4" /> },
+  { label: 'Formations réalisées', value: '2/6',   color: 'text-primary',   icon: <TrendingUp className="h-4 w-4" /> },
 ];
 
 // ── Helpers ────────────────────────────────────────────────────
 const typeConfig: Record<string, { label: string; style: string; icon: React.ReactNode }> = {
   revue_direction: { label: 'Revue de direction', style: 'bg-purple-50 text-purple-700 border-purple-200', icon: <Users className="h-3 w-3" /> },
-  bilan_qualite:   { label: 'Bilan qualité',       style: 'bg-blue-50 text-blue-700 border-blue-200',     icon: <BarChart3 className="h-3 w-3" /> },
-  audit:           { label: 'Rapport audit',        style: 'bg-teal-50 text-teal-700 border-teal-200',     icon: <ClipboardList className="h-3 w-3" /> },
+  bilan_qualite:   { label: 'Bilan qualité',      style: 'bg-blue-50 text-blue-700 border-blue-200',      icon: <BarChart3 className="h-3 w-3" /> },
+  audit:           { label: 'Rapport audit',       style: 'bg-teal-50 text-teal-700 border-teal-200',      icon: <ClipboardList className="h-3 w-3" /> },
 };
 
 const statutConfig: Record<string, { label: string; badge: string; dot: string }> = {
-  brouillon: { label: 'Brouillon',  badge: 'bg-gray-100 text-gray-600',    dot: 'bg-gray-400'    },
-  finalise:  { label: 'Finalisé',   badge: 'bg-amber-100 text-amber-700',  dot: 'bg-amber-500'   },
-  approuve:  { label: 'Approuvé',   badge: 'bg-green-100 text-green-700',  dot: 'bg-green-500'   },
+  brouillon: { label: 'Brouillon', badge: 'bg-gray-100 text-gray-600',   dot: 'bg-gray-400'  },
+  finalise:  { label: 'Finalisé',  badge: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500' },
+  approuve:  { label: 'Approuvé',  badge: 'bg-green-100 text-green-700', dot: 'bg-green-500' },
 };
 
 function typeFilter(tab: string, type: string): boolean {
   if (tab === 'tous') return true;
   return type === tab;
+}
+
+// ── Print Report ───────────────────────────────────────────────
+function printReport(report: typeof reports[0]) {
+  const tc = typeConfig[report.type] ?? typeConfig.bilan_qualite;
+  const sc = statutConfig[report.statut] ?? statutConfig.brouillon;
+  const date = new Date().toLocaleDateString('fr-MA', { day: '2-digit', month: 'long', year: 'numeric' });
+  const periodeDebut = new Date(report.periode_debut).toLocaleDateString('fr-MA', { month: 'long', year: 'numeric' });
+  const periodeFin   = new Date(report.periode_fin).toLocaleDateString('fr-MA', { month: 'long', year: 'numeric' });
+
+  const participantsHtml = report.participants.length > 0
+    ? `<p style="margin:4px 0 0">${report.participants.map(p => `<span style="background:#f3f4f6;padding:2px 8px;border-radius:12px;font-size:11px;margin:2px">${p}</span>`).join(' ')}</p>`
+    : '<p style="color:#9ca3af;font-size:12px">—</p>';
+
+  const decisionsHtml = report.decisions_cles.length > 0
+    ? report.decisions_cles.map((d, i) => `
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
+          <span style="color:#7c3aed;font-weight:700;min-width:20px">${i + 1}.</span>
+          <span style="font-size:13px">${d}</span>
+        </div>`).join('')
+    : '<p style="color:#9ca3af;font-size:12px">Aucune décision enregistrée</p>';
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<title>${report.titre} — SMART SMOE IFDL</title>
+<style>
+  * { margin:0;padding:0;box-sizing:border-box; }
+  body { font-family:'Segoe UI',Arial,sans-serif;color:#111827;background:#fff;padding:32px; }
+  .header { border-bottom:3px solid #0d3b7a;padding-bottom:16px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-start; }
+  h1 { font-size:18px;font-weight:700;color:#0d3b7a;margin-bottom:4px; }
+  .sub { font-size:11px;color:#6b7280; }
+  .badge { display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600; }
+  .section { margin-bottom:20px; }
+  .section-title { font-size:13px;font-weight:700;color:#0d3b7a;margin-bottom:10px;padding-bottom:4px;border-bottom:1px solid #e5e7eb; }
+  .meta-grid { display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px; }
+  .meta-item label { font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;font-weight:600; }
+  .meta-item p { font-size:13px;font-weight:500;margin-top:2px; }
+  .footer { margin-top:32px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:10px;color:#9ca3af;text-align:center; }
+  @media print { body { padding:16px; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>${report.titre}</h1>
+    <p class="sub">ESEF Berrechid · Université Hassan 1er · Master IFDL · SMART SMOE IFDL</p>
+    <p class="sub" style="margin-top:4px">Généré le ${date}</p>
+  </div>
+  <div style="text-align:right">
+    <span class="badge" style="background:#dcfce7;color:#166534">${sc.label}</span><br/>
+    <span class="badge" style="background:#ede9fe;color:#5b21b6;margin-top:4px">${tc.label}</span>
+  </div>
+</div>
+
+<div class="meta-grid">
+  <div class="meta-item"><label>Auteur / Responsable</label><p>${report.auteur}</p></div>
+  <div class="meta-item"><label>Période couverte</label><p>${periodeDebut} → ${periodeFin}</p></div>
+  <div class="meta-item"><label>Date de création</label><p>${new Date(report.date_creation).toLocaleDateString('fr-MA')}</p></div>
+  ${report.nb_pages > 0 ? `<div class="meta-item"><label>Nombre de pages</label><p>${report.nb_pages} pages</p></div>` : ''}
+</div>
+
+${report.participants.length > 0 ? `
+<div class="section">
+  <div class="section-title">Participants</div>
+  ${participantsHtml}
+</div>` : ''}
+
+${report.decisions_cles.length > 0 ? `
+<div class="section">
+  <div class="section-title">Décisions clés</div>
+  ${decisionsHtml}
+</div>` : ''}
+
+<div class="section">
+  <div class="section-title">Indicateurs de la période</div>
+  <table style="width:100%;border-collapse:collapse">
+    <thead><tr style="background:#f3f4f6">
+      <th style="padding:8px;text-align:left;font-size:11px;color:#6b7280">Indicateur</th>
+      <th style="padding:8px;text-align:center;font-size:11px;color:#6b7280">Valeur</th>
+    </tr></thead>
+    <tbody>
+      <tr><td style="padding:8px;border-bottom:1px solid #f3f4f6;font-size:12px">Score ISO 21001</td><td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;font-weight:700;color:#16a34a">84%</td></tr>
+      <tr><td style="padding:8px;border-bottom:1px solid #f3f4f6;font-size:12px">NC clôturées</td><td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;font-weight:700;color:#2563eb">12/14</td></tr>
+      <tr><td style="padding:8px;border-bottom:1px solid #f3f4f6;font-size:12px">Satisfaction parties prenantes</td><td style="padding:8px;border-bottom:1px solid #f3f4f6;text-align:center;font-weight:700;color:#d97706">4.1/5</td></tr>
+      <tr><td style="padding:8px;font-size:12px">Formations réalisées</td><td style="padding:8px;text-align:center;font-weight:700;color:#0d3b7a">2/6</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="footer">SMART SMOE IFDL v1.0.0 · ISO 21001:2018 §9.3 · ESEF Berrechid</div>
+</body></html>`;
+
+  const w = window.open('', '_blank', 'width=850,height=650');
+  if (!w) { toast.error('Autoriser les popups pour télécharger le PDF'); return; }
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 400);
+}
+
+// ── Share Report ───────────────────────────────────────────────
+function shareReport(report: typeof reports[0]) {
+  const msg = `📄 ${report.titre}\nType : ${typeConfig[report.type]?.label}\nPériode : ${new Date(report.periode_debut).toLocaleDateString('fr-MA')} → ${new Date(report.periode_fin).toLocaleDateString('fr-MA')}\nStatut : ${statutConfig[report.statut]?.label}\nAuteur : ${report.auteur}\n— SMART SMOE IFDL · ESEF Berrechid`;
+  navigator.clipboard.writeText(msg)
+    .then(() => toast.success('Résumé copié dans le presse-papiers'))
+    .catch(() => toast.error('Impossible de copier'));
 }
 
 // ── Generate Report Modal ──────────────────────────────────────
@@ -75,16 +183,31 @@ function GenerateReportForm({ onClose, onAdd }: { onClose: () => void; onAdd: (r
     if (!titre.trim() || !periodeDebut || !periodeFin) { setError('Le titre et les dates sont requis.'); return; }
     setLoading(true); setError('');
     try {
-      const { data } = await api.post('/reports', {
-        type, titre, auteur: auteur || 'Resp. Qualité',
-        periode_debut: periodeDebut, periode_fin: periodeFin,
-        statut: 'brouillon', nb_pages: 0,
-        date_creation: new Date().toISOString().slice(0, 10),
+      const res: any = await api.post('/reports', {
+        type, titre,
+        periode_debut: new Date(periodeDebut).toISOString(),
+        periode_fin:   new Date(periodeFin).toISOString(),
+        statut: 'brouillon',
+        contenu: { auteur: auteur || 'Resp. Qualité', nb_pages: 0 },
       });
-      onAdd(data);
+      const saved = res.data ?? res;
+      onAdd({
+        id:             saved.id,
+        titre:          saved.titre,
+        type:           saved.type,
+        statut:         saved.statut,
+        auteur:         saved.contenu?.auteur ?? auteur || 'Resp. Qualité',
+        periode_debut:  saved.periode_debut,
+        periode_fin:    saved.periode_fin,
+        date_creation:  saved.created_at?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
+        nb_pages:       0,
+        participants:   [],
+        decisions_cles: [],
+      });
+      toast.success('Rapport créé !');
       onClose();
     } catch {
-      setError("Erreur lors de la création du rapport. Veuillez réessayer.");
+      setError('Erreur lors de la création. Vérifiez votre connexion.');
     } finally { setLoading(false); }
   };
 
@@ -153,8 +276,100 @@ function GenerateReportForm({ onClose, onAdd }: { onClose: () => void; onAdd: (r
   );
 }
 
+// ── View Report Modal ──────────────────────────────────────────
+function ReportViewModal({ report, onClose }: { report: typeof reports[0]; onClose: () => void }) {
+  const tc = typeConfig[report.type] ?? typeConfig.bilan_qualite;
+  const sc = statutConfig[report.statut] ?? statutConfig.brouillon;
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-card border border-border rounded-xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold">Aperçu du rapport</h3>
+          </div>
+          <button onClick={onClose}><X className="h-4 w-4 text-muted-foreground" /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          {/* Title + badges */}
+          <div>
+            <div className="flex gap-2 mb-2 flex-wrap">
+              <span className={cn('text-[9px] font-semibold px-2 py-0.5 rounded border flex items-center gap-1', tc.style)}>
+                {tc.icon}{tc.label}
+              </span>
+              <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full', sc.badge)}>
+                {sc.label}
+              </span>
+            </div>
+            <h4 className="text-sm font-semibold">{report.titre}</h4>
+          </div>
+          <Separator />
+          {/* Meta */}
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div><p className="text-muted-foreground mb-0.5">Auteur</p><p className="font-medium">{report.auteur}</p></div>
+            <div>
+              <p className="text-muted-foreground mb-0.5">Période</p>
+              <p className="font-medium">
+                {new Date(report.periode_debut).toLocaleDateString('fr-MA', { month: 'short', year: 'numeric' })} →{' '}
+                {new Date(report.periode_fin).toLocaleDateString('fr-MA', { month: 'short', year: 'numeric' })}
+              </p>
+            </div>
+            <div><p className="text-muted-foreground mb-0.5">Créé le</p><p className="font-medium">{new Date(report.date_creation).toLocaleDateString('fr-MA')}</p></div>
+            {report.nb_pages > 0 && <div><p className="text-muted-foreground mb-0.5">Pages</p><p className="font-medium">{report.nb_pages}</p></div>}
+          </div>
+          {/* Participants */}
+          {report.participants.length > 0 && (
+            <>
+              <Separator />
+              <div>
+                <p className="text-xs font-semibold mb-2 flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5 text-muted-foreground" /> Participants
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {report.participants.map(p => (
+                    <span key={p} className="text-[10px] bg-muted px-2 py-0.5 rounded-full font-medium">{p}</span>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+          {/* Decisions */}
+          {report.decisions_cles.length > 0 && (
+            <>
+              <Separator />
+              <div>
+                <p className="text-xs font-semibold mb-2 flex items-center gap-1">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-green-600" /> Décisions clés
+                </p>
+                <div className="space-y-1.5">
+                  {report.decisions_cles.map((d, i) => (
+                    <div key={i} className="flex items-start gap-2 text-xs">
+                      <ChevronRight className="h-3.5 w-3.5 text-purple-500 flex-shrink-0 mt-0.5" />
+                      <span>{d}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+          <div className="flex gap-2 pt-2">
+            <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={onClose}>Fermer</Button>
+            <Button size="sm" className="flex-1 text-xs gap-1" onClick={() => printReport(report)}>
+              <Download className="h-3.5 w-3.5" /> Télécharger PDF
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ── Report Card ────────────────────────────────────────────────
-function ReportCard({ report }: { report: typeof reports[0] }) {
+function ReportCard({ report, onView }: { report: typeof reports[0]; onView: (r: typeof reports[0]) => void }) {
   const tc = typeConfig[report.type] ?? typeConfig.bilan_qualite;
   const sc = statutConfig[report.statut] ?? statutConfig.brouillon;
 
@@ -182,21 +397,28 @@ function ReportCard({ report }: { report: typeof reports[0] }) {
                   {new Date(report.periode_fin).toLocaleDateString('fr-MA', { month: 'short', year: 'numeric' })}
                 </span>
                 <span className="flex items-center gap-1"><FileText className="h-2.5 w-2.5" />Créé le {new Date(report.date_creation).toLocaleDateString('fr-MA')}</span>
-                {report.nb_pages > 0 && (
-                  <span className="text-[10px] text-muted-foreground">{report.nb_pages} pages</span>
-                )}
+                {report.nb_pages > 0 && <span className="text-[10px] text-muted-foreground">{report.nb_pages} pages</span>}
               </div>
             </div>
             <div className="flex items-center gap-1.5 flex-shrink-0">
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+              <Button
+                variant="ghost" size="sm" className="h-7 w-7 p-0" title="Voir"
+                onClick={() => onView(report)}
+              >
                 <Eye className="h-3.5 w-3.5 text-muted-foreground" />
               </Button>
               {report.nb_pages > 0 && (
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                <Button
+                  variant="ghost" size="sm" className="h-7 w-7 p-0" title="Télécharger PDF"
+                  onClick={() => printReport(report)}
+                >
                   <Download className="h-3.5 w-3.5 text-muted-foreground" />
                 </Button>
               )}
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+              <Button
+                variant="ghost" size="sm" className="h-7 w-7 p-0" title="Copier résumé"
+                onClick={() => shareReport(report)}
+              >
                 <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
               </Button>
             </div>
@@ -209,22 +431,22 @@ function ReportCard({ report }: { report: typeof reports[0] }) {
 
 // ── Main Page ──────────────────────────────────────────────────
 export default function ReportsPage() {
-  const [search, setSearch] = useState('');
-  const [showForm, setShowForm] = useState(false);
-  const [reportList, setReportList] = useState(reports);
+  const [search,      setSearch]      = useState('');
+  const [showForm,    setShowForm]    = useState(false);
+  const [viewReport,  setViewReport]  = useState<typeof reports[0] | null>(null);
+  const [reportList,  setReportList]  = useState(reports);
 
   const stats = {
-    total:        reportList.length,
-    revues:       reportList.filter(r => r.type === 'revue_direction').length,
-    en_attente:   reportList.filter(r => r.statut === 'brouillon' || r.statut === 'finalise').length,
+    total:          reportList.length,
+    revues:         reportList.filter(r => r.type === 'revue_direction').length,
+    en_attente:     reportList.filter(r => r.statut === 'brouillon' || r.statut === 'finalise').length,
     derniere_revue: new Date(lastReview.date_creation).toLocaleDateString('fr-MA', { day: '2-digit', month: 'short', year: 'numeric' }),
   };
 
   const filtered = (tab: string) => reportList.filter(r => {
     const matchSearch = r.titre.toLowerCase().includes(search.toLowerCase()) ||
       r.auteur.toLowerCase().includes(search.toLowerCase());
-    const matchTab = typeFilter(tab, r.type);
-    return matchSearch && matchTab;
+    return matchSearch && typeFilter(tab, r.type);
   });
 
   return (
@@ -243,9 +465,7 @@ export default function ReportsPage() {
         </div>
         <div className="flex gap-2">
           <Button
-            variant="outline"
-            size="sm"
-            className="text-xs gap-1"
+            variant="outline" size="sm" className="text-xs gap-1"
             onClick={() => downloadExport('reports', 'xlsx', 'rapports.xlsx')}
           >
             <Download className="h-3.5 w-3.5" /> Export
@@ -256,13 +476,26 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      {/* Modals */}
+      <AnimatePresence>
+        {showForm && (
+          <GenerateReportForm
+            onClose={() => setShowForm(false)}
+            onAdd={r => setReportList(prev => [r, ...prev])}
+          />
+        )}
+        {viewReport && (
+          <ReportViewModal report={viewReport} onClose={() => setViewReport(null)} />
+        )}
+      </AnimatePresence>
+
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Rapports générés',       value: stats.total,         color: 'text-foreground' },
-          { label: 'Revues de direction',    value: stats.revues,        color: 'text-purple-600' },
-          { label: 'En attente approbation', value: stats.en_attente,    color: 'text-amber-600' },
-          { label: 'Dernière revue',         value: stats.derniere_revue, color: 'text-green-600' },
+          { label: 'Rapports générés',       value: stats.total,          color: 'text-foreground'  },
+          { label: 'Revues de direction',    value: stats.revues,         color: 'text-purple-600'  },
+          { label: 'En attente approbation', value: stats.en_attente,     color: 'text-amber-600'   },
+          { label: 'Dernière revue',         value: stats.derniere_revue, color: 'text-green-600'   },
         ].map(s => (
           <Card key={s.label} className="stat-card">
             <p className="stat-label">{s.label}</p>
@@ -312,14 +545,13 @@ export default function ReportsPage() {
                 {lastReview.titre} · Approuvée le {new Date(lastReview.date_creation).toLocaleDateString('fr-MA', { day: '2-digit', month: 'long', year: 'numeric' })}
               </p>
             </div>
-            <Button size="sm" className="text-xs gap-1">
+            <Button size="sm" className="text-xs gap-1" onClick={() => setShowForm(true)}>
               <Plus className="h-3.5 w-3.5" /> Préparer nouvelle revue
             </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Participants */}
             <div>
               <p className="text-xs font-semibold mb-2 flex items-center gap-1">
                 <Users className="h-3.5 w-3.5 text-muted-foreground" /> Participants
@@ -330,8 +562,6 @@ export default function ReportsPage() {
                 ))}
               </div>
             </div>
-
-            {/* Période */}
             <div>
               <p className="text-xs font-semibold mb-2 flex items-center gap-1">
                 <Calendar className="h-3.5 w-3.5 text-muted-foreground" /> Période couverte
@@ -347,7 +577,6 @@ export default function ReportsPage() {
 
           <Separator />
 
-          {/* Key decisions */}
           <div>
             <p className="text-xs font-semibold mb-2 flex items-center gap-1">
               <CheckCircle2 className="h-3.5 w-3.5 text-green-600" /> Décisions clés
@@ -369,18 +598,16 @@ export default function ReportsPage() {
           </div>
 
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" className="text-xs gap-1 h-7">
+            <Button size="sm" variant="outline" className="text-xs gap-1 h-7"
+              onClick={() => setViewReport(lastReview)}>
               <Eye className="h-3 w-3" /> Voir le rapport
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-xs gap-1 h-7"
-              onClick={() => downloadExport('reports', 'pdf', 'rapports.pdf')}
-            >
+            <Button size="sm" variant="outline" className="text-xs gap-1 h-7"
+              onClick={() => printReport(lastReview)}>
               <Download className="h-3 w-3" /> Télécharger PDF
             </Button>
-            <Button size="sm" variant="outline" className="text-xs gap-1 h-7">
+            <Button size="sm" variant="outline" className="text-xs gap-1 h-7"
+              onClick={() => shareReport(lastReview)}>
               <Share2 className="h-3 w-3" /> Partager
             </Button>
           </div>
@@ -406,10 +633,10 @@ export default function ReportsPage() {
 
         <Tabs defaultValue="tous">
           <TabsList className="h-9">
-            <TabsTrigger value="tous"            className="text-xs">Tous ({reports.length})</TabsTrigger>
-            <TabsTrigger value="revue_direction" className="text-xs">Revues direction ({reports.filter(r => r.type === 'revue_direction').length})</TabsTrigger>
-            <TabsTrigger value="bilan_qualite"   className="text-xs">Bilans qualité ({reports.filter(r => r.type === 'bilan_qualite').length})</TabsTrigger>
-            <TabsTrigger value="audit"           className="text-xs">Rapports audit ({reports.filter(r => r.type === 'audit').length})</TabsTrigger>
+            <TabsTrigger value="tous"            className="text-xs">Tous ({reportList.length})</TabsTrigger>
+            <TabsTrigger value="revue_direction" className="text-xs">Revues direction ({reportList.filter(r => r.type === 'revue_direction').length})</TabsTrigger>
+            <TabsTrigger value="bilan_qualite"   className="text-xs">Bilans qualité ({reportList.filter(r => r.type === 'bilan_qualite').length})</TabsTrigger>
+            <TabsTrigger value="audit"           className="text-xs">Rapports audit ({reportList.filter(r => r.type === 'audit').length})</TabsTrigger>
           </TabsList>
 
           {(['tous', 'revue_direction', 'bilan_qualite', 'audit'] as const).map(tab => (
@@ -424,7 +651,7 @@ export default function ReportsPage() {
                   </Card>
                 ) : (
                   filtered(tab).map(report => (
-                    <ReportCard key={report.id} report={report} />
+                    <ReportCard key={report.id} report={report} onView={setViewReport} />
                   ))
                 )}
               </div>
@@ -432,10 +659,6 @@ export default function ReportsPage() {
           ))}
         </Tabs>
       </div>
-
-      <AnimatePresence>
-        {showForm && <GenerateReportForm onClose={() => setShowForm(false)} onAdd={r => setReportList(prev => [r, ...prev])} />}
-      </AnimatePresence>
     </div>
   );
 }
