@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   AlertTriangle, Plus, Search, Filter, Calendar, User,
   TrendingUp, ChevronDown, ChevronRight, Download,
-  X, Target, Shield, Zap, Eye, Edit2, FileText,
+  X, Target, Shield, Zap, Eye, Edit2, FileText, Save,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -315,18 +315,130 @@ function AddRiskForm({ onClose, onAdd }: { onClose: () => void; onAdd: (r: any) 
   );
 }
 
+// ── Edit Risk Modal ────────────────────────────────────────────
+function EditRiskModal({ risk, onClose, onUpdate }: { risk: any; onClose: () => void; onUpdate: (r: any) => void }) {
+  const [libelle, setLibelle]           = useState(risk.libelle ?? '');
+  const [description, setDescription]  = useState(risk.description ?? '');
+  const [probabilite, setProbabilite]   = useState(String(risk.probabilite ?? 1));
+  const [impact, setImpact]             = useState(String(risk.impact ?? risk.gravite ?? 1));
+  const [statut, setStatut]             = useState(risk.statut ?? 'identifie');
+  const [plan, setPlan]                 = useState(risk.plan ?? risk.plan_traitement ?? '');
+  const [echeance, setEcheance]         = useState(risk.echeance ? risk.echeance.slice(0, 10) : '');
+  const [loading, setLoading]           = useState(false);
+  const [error, setError]               = useState('');
+
+  const handleSubmit = async () => {
+    setLoading(true); setError('');
+    try {
+      const { data } = await api.patch(`/risks/${risk.id}`, {
+        libelle, description,
+        probabilite: Number(probabilite),
+        gravite: Number(impact),
+        statut,
+        plan_traitement: plan || null,
+        echeance: echeance || null,
+      });
+      onUpdate({ ...risk, ...data, impact: Number(impact), plan });
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Erreur lors de la modification.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        className="bg-card border border-border rounded-xl p-5 max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold">Modifier — {risk.code}</h3>
+          <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={onClose}><X className="h-3 w-3" /></Button>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-medium mb-1 block">Libellé *</label>
+            <input value={libelle} onChange={e => setLibelle(e.target.value)} className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3" />
+          </div>
+          <div>
+            <label className="text-xs font-medium mb-1 block">Description</label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className="w-full rounded-lg border border-input bg-background text-xs px-3 py-2 resize-none" />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="text-xs font-medium mb-1 block">Probabilité</label>
+              <select value={probabilite} onChange={e => setProbabilite(e.target.value)} className="w-full h-9 rounded-lg border border-input bg-background text-xs px-2">
+                {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block">Impact</label>
+              <select value={impact} onChange={e => setImpact(e.target.value)} className="w-full h-9 rounded-lg border border-input bg-background text-xs px-2">
+                {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block">Statut</label>
+              <select value={statut} onChange={e => setStatut(e.target.value)} className="w-full h-9 rounded-lg border border-input bg-background text-xs px-2">
+                {['identifie','analyse','traitement','surveille','clos'].map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium mb-1 block">Plan de traitement</label>
+            <textarea value={plan} onChange={e => setPlan(e.target.value)} rows={2} className="w-full rounded-lg border border-input bg-background text-xs px-3 py-2 resize-none" />
+          </div>
+          <div>
+            <label className="text-xs font-medium mb-1 block">Échéance</label>
+            <input type="date" value={echeance} onChange={e => setEcheance(e.target.value)} className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3" />
+          </div>
+          {error && <p className="text-xs text-red-500">{error}</p>}
+          <div className="flex gap-2 pt-1">
+            <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" onClick={onClose}>Annuler</Button>
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSubmit} disabled={loading}>
+              <Save className="h-3 w-3" />{loading ? 'Enregistrement...' : 'Enregistrer'}
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ── Main Page ──────────────────────────────────────────────────
 export default function RisksPage() {
   const [riskList, setRiskList]   = useState(risks);
+  const [editRisk, setEditRisk]   = useState<any | null>(null);
+  const [histRisk, setHistRisk]   = useState<any | null>(null);
   useEffect(() => {
-    api.get('/risks').then(r => { if (Array.isArray(r.data) && r.data.length) setRiskList(r.data); }).catch(() => {});
+    api.get('/risks').then(r => {
+      if (Array.isArray(r.data) && r.data.length) {
+        setRiskList(r.data.map((k: any) => ({
+          ...k,
+          // DB uses 'gravite', mock data uses 'impact'
+          impact:          Number(k.impact ?? k.gravite ?? 1),
+          probabilite:     Number(k.probabilite ?? 1),
+          plan:            k.plan ?? k.plan_traitement ?? '',
+          process:         k.process ?? '',
+          responsable:     k.responsable ?? '',
+          echeance:        k.echeance ?? '',
+        })));
+      }
+    }).catch(() => {});
   }, []);
   const [search, setSearch]       = useState('');
   const [filter, setFilter]       = useState<'all' | 'risque' | 'opportunite'>('all');
   const [showForm, setShowForm]   = useState(false);
   const [expanded, setExpanded]   = useState<number | null>(null);
 
-  const handleAdd = (r: any) => setRiskList(prev => [r, ...prev]);
+  const handleAdd = (r: any) => setRiskList(prev => [{
+    ...r,
+    impact: Number(r.impact ?? r.gravite ?? 1),
+    probabilite: Number(r.probabilite ?? 1),
+    plan: r.plan ?? r.plan_traitement ?? '',
+  }, ...prev]);
+
+  const handleUpdate = (updated: any) =>
+    setRiskList(prev => prev.map(r => r.id === updated.id ? { ...r, ...updated, impact: Number(updated.gravite ?? updated.impact ?? r.impact) } : r));
 
   const filtered = riskList.filter(r => {
     const matchType   = filter === 'all' || r.type === filter;
@@ -547,10 +659,10 @@ export default function RisksPage() {
                             ))}
                           </div>
                           <div className="flex gap-2">
-                            <Button size="sm" variant="outline" className="text-xs gap-1 h-7">
+                            <Button size="sm" variant="outline" className="text-xs gap-1 h-7" onClick={() => setEditRisk(r)}>
                               <Edit2 className="h-3 w-3" /> Modifier
                             </Button>
-                            <Button size="sm" variant="outline" className="text-xs gap-1 h-7">
+                            <Button size="sm" variant="outline" className="text-xs gap-1 h-7" onClick={() => setHistRisk(r)}>
                               <Eye className="h-3 w-3" /> Historique
                             </Button>
                           </div>
@@ -568,6 +680,31 @@ export default function RisksPage() {
       <AnimatePresence>
         {showForm && <AddRiskForm onClose={() => setShowForm(false)} onAdd={handleAdd} />}
       </AnimatePresence>
+
+      {/* Edit modal */}
+      {editRisk && (
+        <EditRiskModal risk={editRisk} onClose={() => setEditRisk(null)} onUpdate={updated => { handleUpdate(updated); setEditRisk(null); }} />
+      )}
+
+      {/* Historique modal */}
+      {histRisk && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setHistRisk(null)}>
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            className="bg-card border border-border rounded-xl p-5 max-w-sm w-full shadow-2xl"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold">Historique — {histRisk.code}</h3>
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => setHistRisk(null)}><X className="h-3 w-3" /></Button>
+            </div>
+            <div className="space-y-2 text-xs text-muted-foreground">
+              <div className="flex gap-2 items-center"><span className="w-20 shrink-0 text-foreground font-medium">Création</span><span>{histRisk.created_at ? new Date(histRisk.created_at).toLocaleDateString('fr-MA') : '—'}</span></div>
+              <div className="flex gap-2 items-center"><span className="w-20 shrink-0 text-foreground font-medium">Statut actuel</span><span>{histRisk.statut ?? '—'}</span></div>
+              <div className="flex gap-2 items-center"><span className="w-20 shrink-0 text-foreground font-medium">Criticité</span><span>{histRisk.probabilite} × {histRisk.impact} = {histRisk.probabilite * histRisk.impact}/25</span></div>
+              <div className="flex gap-2 items-center"><span className="w-20 shrink-0 text-foreground font-medium">Dernière MAJ</span><span>{histRisk.updated_at ? new Date(histRisk.updated_at).toLocaleDateString('fr-MA') : '—'}</span></div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
