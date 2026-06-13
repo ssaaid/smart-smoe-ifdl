@@ -196,7 +196,7 @@ function GenerateReportForm({ onClose, onAdd }: { onClose: () => void; onAdd: (r
         titre:          saved.titre,
         type:           saved.type,
         statut:         saved.statut,
-        auteur:         saved.contenu?.auteur ?? auteur || 'Resp. Qualité',
+        auteur:         (saved.contenu?.auteur ?? auteur) || 'Resp. Qualité',
         periode_debut:  saved.periode_debut,
         periode_fin:    saved.periode_fin,
         date_creation:  saved.created_at?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
