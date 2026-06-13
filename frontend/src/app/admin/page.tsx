@@ -12,8 +12,9 @@ import {
   Settings, Plus, Search, Filter, User, Mail, Shield,
   Edit2, Ban, X, Send, Clock, CheckCircle2, AlertCircle,
   Info, Lock, Bell, Wrench, Activity, Users, UserCheck,
-  LogIn, UserPlus, SlidersHorizontal,
+  LogIn, UserPlus, SlidersHorizontal, Save, Loader2, CheckCircle, XCircle,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -195,13 +196,116 @@ function AddUserForm({ onClose, onAdd }: { onClose: () => void; onAdd: (u: any) 
   );
 }
 
+// ── Edit User Modal ────────────────────────────────────────────
+function EditUserModal({ user, onClose, onSaved }: { user: any; onClose: () => void; onSaved: (u: any) => void }) {
+  const [nom,        setNom]   = useState(user.nom ?? '');
+  const [prenom,     setPrenom]= useState(user.prenom ?? '');
+  const [email,      setEmail] = useState(user.email ?? '');
+  const [role,       setRole]  = useState(user.role ?? 'enseignant');
+  const [dept,       setDept]  = useState(user.departement ?? '');
+  const [loading,    setLoading] = useState(false);
+  const [error,      setError]   = useState('');
+
+  const handleSave = async () => {
+    if (!nom.trim() || !prenom.trim() || !email.trim()) {
+      setError('Nom, prénom et email sont requis.'); return;
+    }
+    setLoading(true); setError('');
+    try {
+      const { data } = await api.patch(`/users/${user.id}`, {
+        nom, prenom, email, role, departement: dept || null,
+      });
+      onSaved(data);
+      toast.success('Utilisateur modifié !');
+      onClose();
+    } catch (e: any) {
+      const msg = e?.response?.data?.message;
+      setError(Array.isArray(msg) ? msg.join(', ') : msg || 'Erreur lors de la modification.');
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-card border border-border rounded-xl p-6 max-w-md w-full shadow-2xl"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-sm font-semibold">Modifier l'utilisateur</h3>
+            <p className="text-xs text-muted-foreground">{user.prenom} {user.nom}</p>
+          </div>
+          <button onClick={onClose}><X className="h-4 w-4 text-muted-foreground" /></button>
+        </div>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Nom *</Label>
+              <Input className="h-9 text-sm" value={nom} onChange={e => setNom(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Prénom *</Label>
+              <Input className="h-9 text-sm" value={prenom} onChange={e => setPrenom(e.target.value)} />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Email *</Label>
+            <Input type="email" className="h-9 text-sm" value={email} onChange={e => setEmail(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Rôle</Label>
+              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3"
+                value={role} onChange={e => setRole(e.target.value)}>
+                <option value="enseignant">Enseignant</option>
+                <option value="auditeur_interne">Auditeur</option>
+                <option value="responsable_qualite">Resp. Qualité</option>
+                <option value="coordonnateur">Coordonnateur</option>
+                <option value="directeur">Directeur</option>
+                <option value="personnel">Personnel</option>
+                <option value="etudiant">Étudiant</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Département</Label>
+              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3"
+                value={dept} onChange={e => setDept(e.target.value)}>
+                <option value="">—</option>
+                <option value="Qualité">Qualité</option>
+                <option value="Qualité & Audit">Qualité & Audit</option>
+                <option value="Direction ESEF">Direction ESEF</option>
+                <option value="Pédagogie">Pédagogie</option>
+                <option value="IFDL">IFDL</option>
+                <option value="Administration">Administration</option>
+                <option value="Direction">Direction</option>
+              </select>
+            </div>
+          </div>
+          {error && <p className="text-xs text-red-600">{error}</p>}
+          <div className="flex gap-2 pt-1">
+            <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose}>Annuler</Button>
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSave} disabled={loading}>
+              {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
+              {loading ? 'Enregistrement...' : 'Enregistrer'}
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ── Main Page ──────────────────────────────────────────────────
 export default function AdminPage() {
   const currentUser = useAuthStore(s => s.user);
-  const [search, setSearch] = useState('');
-  const [showForm, setShowForm] = useState(false);
-  const [userList, setUserList] = useState<any[]>([]);
+  const [search,       setSearch]       = useState('');
+  const [showForm,     setShowForm]     = useState(false);
+  const [editUser,     setEditUser]     = useState<any>(null);
+  const [userList,     setUserList]     = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [togglingId,   setTogglingId]   = useState<string | null>(null);
 
   useEffect(() => {
     api.get('/users')
@@ -209,6 +313,19 @@ export default function AdminPage() {
       .catch(() => {})
       .finally(() => setLoadingUsers(false));
   }, []);
+
+  const handleToggleActive = async (u: any) => {
+    setTogglingId(u.id);
+    try {
+      const { data } = await api.patch(`/users/${u.id}`, { is_active: !u.is_active });
+      setUserList(prev => prev.map(x => x.id === u.id ? { ...x, ...data } : x));
+      toast.success(u.is_active ? `${u.prenom} ${u.nom} désactivé` : `${u.prenom} ${u.nom} réactivé`);
+    } catch {
+      toast.error('Erreur lors de la mise à jour');
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   const filteredUsers = userList.filter(u =>
     `${u.prenom} ${u.nom}`.toLowerCase().includes(search.toLowerCase()) ||
@@ -373,11 +490,23 @@ export default function AdminPage() {
                       {/* Actions */}
                       <td>
                         <div className="flex items-center justify-center gap-1">
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                          <Button
+                            variant="ghost" size="sm" className="h-7 w-7 p-0"
+                            title="Modifier"
+                            onClick={() => setEditUser(u)}
+                          >
                             <Edit2 className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                            <Ban className={cn('h-3.5 w-3.5', u.is_active ? 'text-red-400' : 'text-green-500')} />
+                          <Button
+                            variant="ghost" size="sm" className="h-7 w-7 p-0"
+                            title={u.is_active ? 'Désactiver' : 'Réactiver'}
+                            disabled={togglingId === u.id}
+                            onClick={() => handleToggleActive(u)}
+                          >
+                            {togglingId === u.id
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                              : <Ban className={cn('h-3.5 w-3.5', u.is_active ? 'text-red-400' : 'text-green-500')} />
+                            }
                           </Button>
                         </div>
                       </td>
@@ -483,6 +612,16 @@ export default function AdminPage() {
           <AddUserForm
             onClose={() => setShowForm(false)}
             onAdd={u => setUserList(prev => [u, ...prev])}
+          />
+        )}
+        {editUser && (
+          <EditUserModal
+            user={editUser}
+            onClose={() => setEditUser(null)}
+            onSaved={updated => {
+              setUserList(prev => prev.map(x => x.id === updated.id ? { ...x, ...updated } : x));
+              setEditUser(null);
+            }}
           />
         )}
       </AnimatePresence>
