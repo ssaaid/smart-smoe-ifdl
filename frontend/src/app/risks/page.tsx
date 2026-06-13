@@ -197,7 +197,7 @@ function AddRiskForm({ onClose, onAdd }: { onClose: () => void; onAdd: (r: any) 
       const p = Number(probabilite), g = Number(gravite);
       const { data } = await api.post('/risks', {
         type, categorie, libelle, description,
-        probabilite: p, gravite: g, criticite: p * g,
+        probabilite: p, gravite: g,
         plan_traitement: plan || null,
         statut: 'identifie',
         code: (type === 'opportunite' ? 'O' : 'R') + '-' + Date.now().toString().slice(-4),
