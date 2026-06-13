@@ -43,6 +43,24 @@ export class Audit {
   process_id: string | null;
 
   @Column({ type: 'varchar', nullable: true })
+  process_label: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  auditeur_nom: string | null;
+
+  @Column({ type: 'int', nullable: true })
+  score: number | null;
+
+  @Column({ type: 'int', default: 0 })
+  nc_majeures: number;
+
+  @Column({ type: 'int', default: 0 })
+  nc_mineures: number;
+
+  @Column({ type: 'int', default: 0 })
+  nb_observations: number;
+
+  @Column({ type: 'varchar', nullable: true })
   rapport_url: string | null;
 
   @Column({ type: 'text', nullable: true })
