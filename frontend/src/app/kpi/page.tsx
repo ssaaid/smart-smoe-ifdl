@@ -326,9 +326,34 @@ function NouveauKpiModal({ onClose, onAdd }: { onClose: () => void; onAdd: (kpi:
 }
 
 // ── Saisie Modal ───────────────────────────────────────────────
-function SaisieModal({ kpi, onClose }: { kpi: typeof kpiList[0]; onClose: () => void }) {
+function SaisieModal({ kpi, onClose, onUpdate }: { kpi: typeof kpiList[0]; onClose: () => void; onUpdate: (updated: typeof kpiList[0]) => void }) {
   const [valeur, setValeur] = useState('');
+  const [periode, setPeriode] = useState(new Date().toISOString().slice(0, 7));
   const [commentaire, setCommentaire] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async () => {
+    const v = parseFloat(valeur);
+    if (isNaN(v)) { setError('Veuillez saisir une valeur valide.'); return; }
+    setLoading(true); setError('');
+    try {
+      const nouvelleValeur = v;
+      const statut = nouvelleValeur >= kpi.valeur_cible ? 'vert' : nouvelleValeur >= kpi.seuil_alerte ? 'orange' : 'rouge';
+      const { data } = await api.patch(`/kpis/${kpi.id}`, {
+        valeur_actuelle: nouvelleValeur,
+        statut,
+        commentaire: commentaire || undefined,
+        periode,
+      });
+      onUpdate({ ...kpi, ...data, valeur_actuelle: nouvelleValeur, statut });
+      onClose();
+    } catch {
+      setError("Erreur lors de l'enregistrement. Veuillez réessayer.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -369,7 +394,7 @@ function SaisieModal({ kpi, onClose }: { kpi: typeof kpiList[0]; onClose: () => 
 
           <div className="space-y-1">
             <Label className="text-xs font-medium">Période</Label>
-            <Input type="month" className="h-9 text-sm" defaultValue={new Date().toISOString().slice(0, 7)} />
+            <Input type="month" className="h-9 text-sm" value={periode} onChange={e => setPeriode(e.target.value)} />
           </div>
 
           <div className="space-y-1">
@@ -382,10 +407,12 @@ function SaisieModal({ kpi, onClose }: { kpi: typeof kpiList[0]; onClose: () => 
             />
           </div>
 
+          {error && <p className="text-xs text-red-600">{error}</p>}
+
           <div className="flex gap-2 pt-1">
             <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose}>Annuler</Button>
-            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={onClose}>
-              <Save className="h-3 w-3" /> Enregistrer
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSubmit} disabled={loading}>
+              <Save className="h-3 w-3" /> {loading ? 'Enregistrement...' : 'Enregistrer'}
             </Button>
           </div>
         </div>
@@ -694,7 +721,14 @@ export default function KpiPage() {
       {/* Saisie Modal */}
       <AnimatePresence>
         {saisieKpi && (
-          <SaisieModal kpi={saisieKpi} onClose={() => setSaisieKpi(null)} />
+          <SaisieModal
+            kpi={saisieKpi}
+            onClose={() => setSaisieKpi(null)}
+            onUpdate={updated => {
+              setList(prev => prev.map(k => k.id === updated.id ? updated : k));
+              setSaisieKpi(null);
+            }}
+          />
         )}
       </AnimatePresence>
 
