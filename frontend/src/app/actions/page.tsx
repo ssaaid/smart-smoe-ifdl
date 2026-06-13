@@ -254,13 +254,23 @@ function ActionCard({
   action,
   isSelected,
   onSelect,
+  onUpdate,
 }: {
   action: typeof actions[0];
   isSelected: boolean;
   onSelect: () => void;
+  onUpdate: (updated: typeof actions[0]) => void;
 }) {
   const typeCfg   = typeConfig[action.type] ?? typeConfig.corrective;
   const statutCfg = statutConfig[action.statut] ?? statutConfig.ouverte;
+
+  const changeStatut = async (statut: string) => {
+    const avancement = statut === 'cloturee' ? 100 : statut === 'en_cours' ? 10 : 0;
+    try {
+      const { data } = await api.patch(`/corrective-actions/${action.id}`, { statut, avancement });
+      onUpdate({ ...action, ...data, statut, avancement });
+    } catch {}
+  };
 
   const avancementColor =
     action.avancement >= 80 ? 'bg-green-500' :
@@ -403,12 +413,12 @@ function ActionCard({
                 {/* Action buttons */}
                 <div className="flex gap-2 pt-1">
                   {action.statut === 'ouverte' && (
-                    <Button size="sm" className="text-xs gap-1 h-7">
+                    <Button size="sm" className="text-xs gap-1 h-7" onClick={() => changeStatut('en_cours')}>
                       <TrendingUp className="h-3 w-3" /> Démarrer
                     </Button>
                   )}
                   {action.statut === 'en_cours' && (
-                    <Button size="sm" className="text-xs gap-1 h-7">
+                    <Button size="sm" className="text-xs gap-1 h-7" onClick={() => changeStatut('cloturee')}>
                       <CheckCircle2 className="h-3 w-3" /> Clôturer
                     </Button>
                   )}
@@ -550,6 +560,7 @@ export default function ActionsPage() {
                   action={action}
                   isSelected={selected === action.id}
                   onSelect={() => setSelected(selected === action.id ? null : action.id)}
+                  onUpdate={updated => setActionList(prev => prev.map(a => a.id === updated.id ? updated : a))}
                 />
               ))
             )}

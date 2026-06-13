@@ -261,6 +261,14 @@ export default function FindingsPage() {
     api.get('/findings').then(r => { if (Array.isArray(r.data) && r.data.length) setFindingList(r.data); }).catch(() => {});
   }, []);
   const handleAdd = (f: any) => setFindingList(prev => [f, ...prev]);
+  const updateFinding = async (id: number, patch: Record<string, any>) => {
+    try {
+      const { data } = await api.patch(`/findings/${id}`, patch);
+      const updated = { ...findingList.find(f => f.id === id)!, ...data, ...patch };
+      setFindingList(prev => prev.map(f => f.id === id ? updated : f));
+      setSelected(prev => prev?.id === id ? updated : prev);
+    } catch {}
+  };
 
   const clotureCount = findingList.filter(f => ['cloturee', 'verifiee'].includes(f.statut)).length;
   const tauxCloture  = Math.round((clotureCount / findingList.length) * 100);
@@ -473,12 +481,12 @@ export default function FindingsPage() {
                                       <Edit2 className="h-3 w-3" /> Modifier
                                     </Button>
                                     {f.statut === 'ouverte' && (
-                                      <Button size="sm" className="text-xs gap-1 h-7">
+                                      <Button size="sm" className="text-xs gap-1 h-7" onClick={() => updateFinding(f.id, { statut: 'en_traitement' })}>
                                         <Send className="h-3 w-3" /> Traiter
                                       </Button>
                                     )}
                                     {f.statut === 'en_traitement' && (
-                                      <Button size="sm" className="text-xs gap-1 h-7">
+                                      <Button size="sm" className="text-xs gap-1 h-7" onClick={() => updateFinding(f.id, { statut: 'cloturee', avancement: 100 })}>
                                         <CheckCircle2 className="h-3 w-3" /> Clôturer
                                       </Button>
                                     )}
@@ -578,12 +586,12 @@ export default function FindingsPage() {
 
                           <div className="flex gap-2">
                             {selected.statut === 'ouverte' && (
-                              <Button size="sm" className="flex-1 text-xs gap-1 h-7">
+                              <Button size="sm" className="flex-1 text-xs gap-1 h-7" onClick={() => updateFinding(selected.id, { statut: 'en_traitement' })}>
                                 <Send className="h-3 w-3" /> Traiter
                               </Button>
                             )}
                             {selected.statut === 'en_traitement' && (
-                              <Button size="sm" className="flex-1 text-xs gap-1 h-7">
+                              <Button size="sm" className="flex-1 text-xs gap-1 h-7" onClick={() => updateFinding(selected.id, { statut: 'cloturee', avancement: 100 })}>
                                 <CheckCircle2 className="h-3 w-3" /> Clôturer
                               </Button>
                             )}

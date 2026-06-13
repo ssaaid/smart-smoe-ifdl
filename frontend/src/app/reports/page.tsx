@@ -5,6 +5,7 @@
 'use client';
 
 import { useState } from 'react';
+import api from '@/lib/api';
 import { downloadExport } from '@/lib/export';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -61,7 +62,32 @@ function typeFilter(tab: string, type: string): boolean {
 }
 
 // ── Generate Report Modal ──────────────────────────────────────
-function GenerateReportForm({ onClose }: { onClose: () => void }) {
+function GenerateReportForm({ onClose, onAdd }: { onClose: () => void; onAdd: (r: any) => void }) {
+  const [type, setType]           = useState('revue_direction');
+  const [titre, setTitre]         = useState('');
+  const [periodeDebut, setDebut]  = useState('');
+  const [periodeFin, setFin]      = useState('');
+  const [auteur, setAuteur]       = useState('');
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState('');
+
+  const handleSubmit = async () => {
+    if (!titre.trim() || !periodeDebut || !periodeFin) { setError('Le titre et les dates sont requis.'); return; }
+    setLoading(true); setError('');
+    try {
+      const { data } = await api.post('/reports', {
+        type, titre, auteur: auteur || 'Resp. Qualité',
+        periode_debut: periodeDebut, periode_fin: periodeFin,
+        statut: 'brouillon', nb_pages: 0,
+        date_creation: new Date().toISOString().slice(0, 10),
+      });
+      onAdd(data);
+      onClose();
+    } catch {
+      setError("Erreur lors de la création du rapport. Veuillez réessayer.");
+    } finally { setLoading(false); }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <motion.div
@@ -79,7 +105,7 @@ function GenerateReportForm({ onClose }: { onClose: () => void }) {
         <div className="space-y-3">
           <div className="space-y-1">
             <Label className="text-xs font-medium">Type de rapport</Label>
-            <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+            <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3" value={type} onChange={e => setType(e.target.value)}>
               <option value="revue_direction">Revue de direction</option>
               <option value="bilan_qualite">Bilan qualité</option>
               <option value="audit">Rapport d'audit</option>
@@ -87,26 +113,26 @@ function GenerateReportForm({ onClose }: { onClose: () => void }) {
           </div>
           <div className="space-y-1">
             <Label className="text-xs font-medium">Titre du rapport *</Label>
-            <Input placeholder="Ex. Revue de Direction S1 2026-2027..." className="h-9 text-sm" />
+            <Input placeholder="Ex. Revue de Direction S1 2026-2027..." className="h-9 text-sm" value={titre} onChange={e => setTitre(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Période — début</Label>
-              <Input type="date" className="h-9 text-sm" />
+              <Label className="text-xs font-medium">Période — début *</Label>
+              <Input type="date" className="h-9 text-sm" value={periodeDebut} onChange={e => setDebut(e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Période — fin</Label>
-              <Input type="date" className="h-9 text-sm" />
+              <Label className="text-xs font-medium">Période — fin *</Label>
+              <Input type="date" className="h-9 text-sm" value={periodeFin} onChange={e => setFin(e.target.value)} />
             </div>
           </div>
           <div className="space-y-1">
             <Label className="text-xs font-medium">Auteur / Responsable</Label>
-            <Input placeholder="Resp. Qualité..." className="h-9 text-sm" />
+            <Input placeholder="Resp. Qualité..." className="h-9 text-sm" value={auteur} onChange={e => setAuteur(e.target.value)} />
           </div>
           <div className="space-y-1">
             <Label className="text-xs font-medium">Sections à inclure</Label>
             <div className="space-y-1.5">
-              {['Contexte et parties intéressées', 'Résultats audits internes', 'État des NC et actions correctives', 'KPIs et indicateurs qualité', 'Satisfaction parties prenantes', 'Plan d\'amélioration'].map(s => (
+              {['Contexte et parties intéressées', 'Résultats audits internes', 'État des NC et actions correctives', 'KPIs et indicateurs qualité', 'Satisfaction parties prenantes', "Plan d'amélioration"].map(s => (
                 <label key={s} className="flex items-center gap-2 text-xs cursor-pointer">
                   <input type="checkbox" defaultChecked className="rounded" />
                   {s}
@@ -114,10 +140,11 @@ function GenerateReportForm({ onClose }: { onClose: () => void }) {
               ))}
             </div>
           </div>
+          {error && <p className="text-xs text-red-600">{error}</p>}
           <div className="flex gap-2 pt-1">
             <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose}>Annuler</Button>
-            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={onClose}>
-              <Send className="h-3 w-3" /> Générer
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSubmit} disabled={loading}>
+              <Send className="h-3 w-3" /> {loading ? 'Génération...' : 'Générer'}
             </Button>
           </div>
         </div>
@@ -184,15 +211,16 @@ function ReportCard({ report }: { report: typeof reports[0] }) {
 export default function ReportsPage() {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [reportList, setReportList] = useState(reports);
 
   const stats = {
-    total:        reports.length,
-    revues:       reports.filter(r => r.type === 'revue_direction').length,
-    en_attente:   reports.filter(r => r.statut === 'brouillon' || r.statut === 'finalise').length,
+    total:        reportList.length,
+    revues:       reportList.filter(r => r.type === 'revue_direction').length,
+    en_attente:   reportList.filter(r => r.statut === 'brouillon' || r.statut === 'finalise').length,
     derniere_revue: new Date(lastReview.date_creation).toLocaleDateString('fr-MA', { day: '2-digit', month: 'short', year: 'numeric' }),
   };
 
-  const filtered = (tab: string) => reports.filter(r => {
+  const filtered = (tab: string) => reportList.filter(r => {
     const matchSearch = r.titre.toLowerCase().includes(search.toLowerCase()) ||
       r.auteur.toLowerCase().includes(search.toLowerCase());
     const matchTab = typeFilter(tab, r.type);
@@ -406,7 +434,7 @@ export default function ReportsPage() {
       </div>
 
       <AnimatePresence>
-        {showForm && <GenerateReportForm onClose={() => setShowForm(false)} />}
+        {showForm && <GenerateReportForm onClose={() => setShowForm(false)} onAdd={r => setReportList(prev => [r, ...prev])} />}
       </AnimatePresence>
     </div>
   );

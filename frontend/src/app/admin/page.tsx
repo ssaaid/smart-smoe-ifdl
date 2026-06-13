@@ -5,6 +5,7 @@
 'use client';
 
 import { useState } from 'react';
+import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Settings, Plus, Search, Filter, User, Mail, Shield,
@@ -92,7 +93,30 @@ function formatRelativeDate(iso: string): string {
 }
 
 // ── Add User Modal ─────────────────────────────────────────────
-function AddUserForm({ onClose }: { onClose: () => void }) {
+function AddUserForm({ onClose, onAdd }: { onClose: () => void; onAdd: (u: any) => void }) {
+  const [nom, setNom]           = useState('');
+  const [prenom, setPrenom]     = useState('');
+  const [email, setEmail]       = useState('');
+  const [role, setRole]         = useState('enseignant');
+  const [departement, setDept]  = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
+
+  const handleSubmit = async () => {
+    if (!nom.trim() || !prenom.trim() || !email.trim() || !password.trim()) {
+      setError('Nom, prénom, email et mot de passe sont requis.'); return;
+    }
+    setLoading(true); setError('');
+    try {
+      const { data } = await api.post('/auth/register', { nom, prenom, email, password, role, departement: departement || undefined });
+      onAdd(data);
+      onClose();
+    } catch (e: any) {
+      setError(e?.response?.data?.message || "Erreur lors de la création de l'utilisateur.");
+    } finally { setLoading(false); }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <motion.div
@@ -111,21 +135,21 @@ function AddUserForm({ onClose }: { onClose: () => void }) {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs font-medium">Nom *</Label>
-              <Input placeholder="Benali" className="h-9 text-sm" />
+              <Input placeholder="Benali" className="h-9 text-sm" value={nom} onChange={e => setNom(e.target.value)} />
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium">Prénom *</Label>
-              <Input placeholder="Amine" className="h-9 text-sm" />
+              <Input placeholder="Amine" className="h-9 text-sm" value={prenom} onChange={e => setPrenom(e.target.value)} />
             </div>
           </div>
           <div className="space-y-1">
             <Label className="text-xs font-medium">Email *</Label>
-            <Input type="email" placeholder="prenom.nom@esef-berrechid.ma" className="h-9 text-sm" />
+            <Input type="email" placeholder="prenom.nom@esef-berrechid.ma" className="h-9 text-sm" value={email} onChange={e => setEmail(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs font-medium">Rôle *</Label>
-              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3" value={role} onChange={e => setRole(e.target.value)}>
                 <option value="enseignant">Enseignant</option>
                 <option value="auditeur">Auditeur</option>
                 <option value="responsable_qualite">Resp. Qualité</option>
@@ -136,7 +160,7 @@ function AddUserForm({ onClose }: { onClose: () => void }) {
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium">Département</Label>
-              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3" value={departement} onChange={e => setDept(e.target.value)}>
                 <option value="">Sélectionner...</option>
                 <option value="Qualité">Qualité</option>
                 <option value="Qualité & Audit">Qualité & Audit</option>
@@ -149,18 +173,13 @@ function AddUserForm({ onClose }: { onClose: () => void }) {
           </div>
           <div className="space-y-1">
             <Label className="text-xs font-medium">Mot de passe temporaire *</Label>
-            <Input type="password" placeholder="••••••••" className="h-9 text-sm" />
+            <Input type="password" placeholder="••••••••" className="h-9 text-sm" value={password} onChange={e => setPassword(e.target.value)} />
           </div>
-          <div className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-lg">
-            <input type="checkbox" id="send-creds" className="rounded" defaultChecked />
-            <label htmlFor="send-creds" className="text-xs cursor-pointer">
-              Envoyer les identifiants par email
-            </label>
-          </div>
+          {error && <p className="text-xs text-red-600">{error}</p>}
           <div className="flex gap-2 pt-1">
             <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose}>Annuler</Button>
-            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={onClose}>
-              <Send className="h-3 w-3" /> Créer l'utilisateur
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSubmit} disabled={loading}>
+              <Send className="h-3 w-3" /> {loading ? 'Création...' : "Créer l'utilisateur"}
             </Button>
           </div>
         </div>
@@ -173,17 +192,18 @@ function AddUserForm({ onClose }: { onClose: () => void }) {
 export default function AdminPage() {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [userList, setUserList] = useState(users);
 
-  const filteredUsers = users.filter(u =>
+  const filteredUsers = userList.filter(u =>
     `${u.prenom} ${u.nom}`.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase()) ||
     u.departement.toLowerCase().includes(search.toLowerCase())
   );
 
   const stats = {
-    actifs:     users.filter(u => u.is_active).length,
-    admins:     users.filter(u => u.role === 'admin').length,
-    enseignants: users.filter(u => u.role === 'enseignant').length,
+    actifs:     userList.filter(u => u.is_active).length,
+    admins:     userList.filter(u => u.role === 'admin').length,
+    enseignants: userList.filter(u => u.role === 'enseignant').length,
     last_audit: '2026-06-01',
   };
 
@@ -432,7 +452,7 @@ export default function AdminPage() {
       </div>
 
       <AnimatePresence>
-        {showForm && <AddUserForm onClose={() => setShowForm(false)} />}
+        {showForm && <AddUserForm onClose={() => setShowForm(false)} onAdd={u => setUserList(prev => [...prev, u])} />}
       </AnimatePresence>
     </div>
   );
