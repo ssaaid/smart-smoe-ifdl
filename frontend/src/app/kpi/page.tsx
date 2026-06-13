@@ -431,7 +431,19 @@ export default function KpiPage() {
   const [showNewKpi, setShowNewKpi] = useState(false);
 
   useEffect(() => {
-    api.get('/kpis').then(r => { if (Array.isArray(r.data) && r.data.length) setList(r.data); }).catch(() => {});
+    api.get('/kpis').then(r => {
+      if (Array.isArray(r.data) && r.data.length) {
+        setList(r.data.map((k: any) => ({
+          ...k,
+          historique:      k.historique      ?? [],
+          valeur_actuelle: k.valeur_actuelle ?? 0,
+          process:         k.process         ?? 'PR-01',
+          axe:             k.axe             ?? 'Qualité',
+          responsable:     k.responsable     ?? '',
+          statut:          k.statut          ?? 'orange',
+        })));
+      }
+    }).catch(() => {});
   }, []);
 
   const handleAddKpi = (kpi: typeof kpiList[0]) => setList(prev => [...prev, kpi]);
@@ -540,7 +552,7 @@ export default function KpiPage() {
           {/* KPI Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {filtered.map(kpi => {
-              const cfg = statutConfig[kpi.statut as keyof typeof statutConfig];
+              const cfg = statutConfig[kpi.statut as keyof typeof statutConfig] ?? statutConfig.orange;
               const taux = Math.min(Math.round((kpi.valeur_actuelle / kpi.valeur_cible) * 100), 150);
               const isSelected = selectedKpi?.id === kpi.id;
 
@@ -597,7 +609,7 @@ export default function KpiPage() {
                       {/* Sparkline */}
                       <div className="h-14">
                         <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={kpi.historique}>
+                          <AreaChart data={kpi.historique ?? []}>
                             <defs>
                               <linearGradient id={`g-${kpi.id}`} x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%"  stopColor={cfg.barColor} stopOpacity={0.2} />
@@ -648,8 +660,8 @@ export default function KpiPage() {
         {/* ── Évolution Tab ─────────────────────────────── */}
         <TabsContent value="evolution" className="mt-4 space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {list.filter(k => k.historique.length >= 4).slice(0, 4).map(kpi => {
-              const cfg = statutConfig[kpi.statut as keyof typeof statutConfig];
+            {list.filter(k => (k.historique ?? []).length >= 4).slice(0, 4).map(kpi => {
+              const cfg = statutConfig[kpi.statut as keyof typeof statutConfig] ?? statutConfig.orange;
               return (
                 <Card key={kpi.id}>
                   <CardHeader className="pb-1">
@@ -662,7 +674,7 @@ export default function KpiPage() {
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={140}>
-                      <LineChart data={kpi.historique}>
+                      <LineChart data={kpi.historique ?? []}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis dataKey="periode" tick={{ fontSize: 10 }} />
                         <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${v}${kpi.unite === '%' ? '%' : ''}`} />
@@ -682,7 +694,7 @@ export default function KpiPage() {
         <TabsContent value="alertes" className="mt-4">
           <div className="space-y-3">
             {list.filter(k => k.statut !== 'vert').map(kpi => {
-              const cfg = statutConfig[kpi.statut as keyof typeof statutConfig];
+              const cfg = statutConfig[kpi.statut as keyof typeof statutConfig] ?? statutConfig.orange;
               const gap = kpi.valeur_cible - kpi.valeur_actuelle;
               return (
                 <Card key={kpi.id} className={cn('border-l-4', kpi.statut === 'rouge' ? 'border-l-red-500' : 'border-l-amber-500')}>
