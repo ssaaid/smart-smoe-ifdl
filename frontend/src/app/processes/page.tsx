@@ -5,7 +5,7 @@
 'use client';
 
 import { useState } from 'react';
-import { downloadExport } from '@/lib/export';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   GitBranch, Target, FileText, BarChart2, ArrowRight,
@@ -361,8 +361,99 @@ function InteractionsMatrix() {
   );
 }
 
+// ── Print helpers ─────────────────────────────────────────────────────────
+function printProcess(p: typeof processes[0]) {
+  const date = new Date().toLocaleDateString('fr-MA', { day: '2-digit', month: 'long', year: 'numeric' });
+  const kpiRows = p.kpis.map(k => `
+    <tr>
+      <td style="padding:6px 10px;font-size:11px;color:#6b7280">${k.code}</td>
+      <td style="padding:6px 10px;font-size:12px">${k.libelle}</td>
+      <td style="padding:6px 10px;font-size:12px;font-weight:700;text-align:center">${k.valeur}${k.unite}</td>
+      <td style="padding:6px 10px;font-size:12px;text-align:center;color:#6b7280">${k.cible}${k.unite}</td>
+      <td style="padding:6px 10px;font-size:11px;text-align:center;color:${k.valeur >= k.cible ? '#16a34a' : '#dc2626'}">${k.valeur >= k.cible ? '✓ Atteint' : '✗ À améliorer'}</td>
+    </tr>`).join('');
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Fiche Processus — ${p.code}</title>
+  <style>
+    body { font-family: Arial, sans-serif; color: #111; margin: 30px; }
+    h1 { font-size: 18px; color: #1d4ed8; margin-bottom: 4px; }
+    h2 { font-size: 12px; color: #6b7280; font-weight: normal; margin-top: 0; }
+    .meta { display: flex; gap: 24px; background: #f3f4f6; padding: 10px 14px; border-radius: 8px; margin: 16px 0; }
+    .meta div { font-size: 11px; color: #6b7280; }
+    .meta strong { display: block; font-size: 13px; color: #111; }
+    .section { margin: 16px 0; }
+    .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #6b7280; letter-spacing: .05em; margin-bottom: 6px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+    th { background: #f3f4f6; padding: 6px 10px; font-size: 11px; text-align: left; }
+    tr:nth-child(even) td { background: #fafafa; }
+    @media print { @page { margin: 20mm; } }
+  </style></head><body>
+  <h1>${p.code} — ${p.libelle}</h1>
+  <h2>SMART SMOE IFDL · ESEF Berrechid · Généré le ${date}</h2>
+  <div class="meta">
+    <div><div class="section-title">Type</div><strong>${{ management:'Pilotage', realisation:'Réalisation', support:'Support' }[p.type]}</strong></div>
+    <div><div class="section-title">Responsable</div><strong>${p.responsable}</strong></div>
+    <div><div class="section-title">Performance</div><strong>${p.performance}%</strong></div>
+    <div><div class="section-title">Documents</div><strong>${p.nb_documents}</strong></div>
+    <div><div class="section-title">Risques</div><strong>${p.nb_risques}</strong></div>
+  </div>
+  <div class="section"><div class="section-title">Description</div><p style="font-size:12px;margin:0">${p.description}</p></div>
+  <div class="section"><div class="section-title">Objectifs</div><p style="font-size:12px;margin:0;color:#4b5563">${p.objectifs}</p></div>
+  <div class="section"><div class="section-title">Indicateurs de performance</div>
+    <table><thead><tr><th>Code</th><th>Libellé</th><th style="text-align:center">Valeur</th><th style="text-align:center">Cible</th><th style="text-align:center">Statut</th></tr></thead>
+    <tbody>${kpiRows}</tbody></table>
+  </div>
+  </body></html>`;
+
+  const w = window.open('', '_blank', 'width=900,height=700');
+  if (!w) return;
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(() => { w.print(); }, 400);
+}
+
+function printAllProcesses() {
+  const date = new Date().toLocaleDateString('fr-MA', { day: '2-digit', month: 'long', year: 'numeric' });
+  const rows = processes.map(p => `
+    <tr>
+      <td style="padding:8px 10px;font-size:11px;font-weight:700;color:#1d4ed8">${p.code}</td>
+      <td style="padding:8px 10px;font-size:12px">${p.libelle}</td>
+      <td style="padding:8px 10px;font-size:11px;color:#6b7280">${{ management:'Pilotage', realisation:'Réalisation', support:'Support' }[p.type]}</td>
+      <td style="padding:8px 10px;font-size:11px">${p.responsable}</td>
+      <td style="padding:8px 10px;font-size:12px;font-weight:700;text-align:center;color:${p.performance >= 85 ? '#16a34a' : p.performance >= 70 ? '#d97706' : '#dc2626'}">${p.performance}%</td>
+      <td style="padding:8px 10px;font-size:11px;text-align:center">${p.kpis.length}</td>
+      <td style="padding:8px 10px;font-size:11px;text-align:center">${p.nb_documents}</td>
+    </tr>`).join('');
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Cartographie des Processus SMOE</title>
+  <style>
+    body { font-family: Arial, sans-serif; color: #111; margin: 30px; }
+    h1 { font-size: 20px; color: #1d4ed8; margin-bottom: 4px; }
+    h2 { font-size: 12px; color: #6b7280; font-weight: normal; margin-top: 0; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th { background: #1d4ed8; color: white; padding: 8px 10px; font-size: 11px; text-align: left; }
+    tr:nth-child(even) td { background: #f9fafb; }
+    @media print { @page { margin: 20mm; } }
+  </style></head><body>
+  <h1>Cartographie des Processus SMOE</h1>
+  <h2>SMART SMOE IFDL · ESEF Berrechid · ISO 21001 §4.4 · Généré le ${date}</h2>
+  <table><thead><tr><th>Code</th><th>Libellé</th><th>Type</th><th>Responsable</th><th style="text-align:center">Performance</th><th style="text-align:center">KPIs</th><th style="text-align:center">Documents</th></tr></thead>
+  <tbody>${rows}</tbody></table>
+  </body></html>`;
+
+  const w = window.open('', '_blank', 'width=1000,height=700');
+  if (!w) return;
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(() => { w.print(); }, 400);
+}
+
 // ── Detail Panel ───────────────────────────────────────────────────────────
-function ProcessDetail({ process, onClose }: { process: typeof processes[0]; onClose: () => void }) {
+function ProcessDetail({ process, onClose, onNavigateDocs }: { process: typeof processes[0]; onClose: () => void; onNavigateDocs: () => void }) {
   const c = colorMap[process.couleur];
 
   return (
@@ -538,14 +629,14 @@ function ProcessDetail({ process, onClose }: { process: typeof processes[0]; onC
           </div>
 
           <div className="flex gap-2 pt-1">
-            <Button size="sm" className={cn('flex-1 text-xs gap-1 h-7')}>
+            <Button size="sm" className={cn('flex-1 text-xs gap-1 h-7')} onClick={onNavigateDocs}>
               <FileText className="h-3 w-3" /> Procédures
             </Button>
             <Button
               size="sm"
               variant="outline"
               className="text-xs gap-1 h-7 px-2"
-              onClick={() => downloadExport('processes', 'pdf', 'processus.pdf')}
+              onClick={() => printProcess(process)}
             >
               <Download className="h-3 w-3" />
             </Button>
@@ -558,6 +649,7 @@ function ProcessDetail({ process, onClose }: { process: typeof processes[0]; onC
 
 // ── Main Page ─────────────────────────────────────────────────────────────
 export default function ProcessesPage() {
+  const router = useRouter();
   const [selected, setSelected] = useState<typeof processes[0] | null>(null);
 
   const totalKpis = processes.reduce((s, p) => s + p.kpis.length, 0);
@@ -585,9 +677,9 @@ export default function ProcessesPage() {
             variant="outline"
             size="sm"
             className="text-xs gap-1"
-            onClick={() => downloadExport('processes', 'xlsx', 'processus.xlsx')}
+            onClick={printAllProcesses}
           >
-            <Download className="h-3.5 w-3.5" /> Exporter
+            <Download className="h-3.5 w-3.5" /> Exporter PDF
           </Button>
         </div>
       </div>
@@ -671,6 +763,7 @@ export default function ProcessesPage() {
                     key={selected.id}
                     process={selected}
                     onClose={() => setSelected(null)}
+                    onNavigateDocs={() => router.push('/documents')}
                   />
                 ) : (
                   <motion.div
