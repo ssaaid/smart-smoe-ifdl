@@ -24,7 +24,7 @@ export class KpiService {
   ) {}
 
   /** Get all KPIs with current values and status */
-  async findAll(processId?: string): Promise<Kpi[]> {
+  async findAll(processId?: string): Promise<any[]> {
     const qb = this.kpiRepo
       .createQueryBuilder('k')
       .leftJoinAndSelect('k.process', 'p')
@@ -34,7 +34,31 @@ export class KpiService {
     if (processId) {
       qb.andWhere('k.process_id = :processId', { processId });
     }
-    return qb.orderBy('k.code', 'ASC').getMany();
+    const kpis = await qb.orderBy('k.code', 'ASC').getMany();
+
+    // Attach recent mesures as historique for each KPI
+    const ids = kpis.map(k => k.id);
+    if (!ids.length) return kpis;
+
+    const mesures = await this.mesureRepo
+      .createQueryBuilder('m')
+      .where('m.kpi_id IN (:...ids)', { ids })
+      .orderBy('m.periode', 'ASC')
+      .getMany();
+
+    const byKpi: Record<string, KpiMesure[]> = {};
+    for (const m of mesures) {
+      if (!byKpi[m.kpi_id]) byKpi[m.kpi_id] = [];
+      byKpi[m.kpi_id].push(m);
+    }
+
+    return kpis.map(k => ({
+      ...k,
+      historique: (byKpi[k.id] ?? []).map(m => ({
+        periode: new Date(m.periode).toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }),
+        valeur: Number(m.valeur),
+      })),
+    }));
   }
 
   async findOne(id: string): Promise<Kpi> {
