@@ -4,7 +4,7 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { downloadExport } from '@/lib/export';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -257,6 +257,9 @@ export default function FindingsPage() {
   const [selected, setSelected]   = useState<typeof findings[0] | null>(null);
   const [expanded, setExpanded]   = useState<number | null>(null);
   const [findingList, setFindingList] = useState(findings);
+  useEffect(() => {
+    api.get('/findings').then(r => { if (Array.isArray(r.data) && r.data.length) setFindingList(r.data); }).catch(() => {});
+  }, []);
   const handleAdd = (f: any) => setFindingList(prev => [f, ...prev]);
 
   const clotureCount = findingList.filter(f => ['cloturee', 'verifiee'].includes(f.statut)).length;

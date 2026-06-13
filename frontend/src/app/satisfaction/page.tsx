@@ -5,7 +5,7 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { downloadExport } from '@/lib/export';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -324,6 +324,9 @@ function SurveyRow({ survey }: { survey: typeof surveys[0] }) {
 export default function SatisfactionPage() {
   const [showForm, setShowForm] = useState(false);
   const [surveyList, setSurveyList] = useState(surveys);
+  useEffect(() => {
+    api.get('/satisfaction').then(r => { if (Array.isArray(r.data) && r.data.length) setSurveyList(r.data); }).catch(() => {});
+  }, []);
   const handleAdd = (s: any) => setSurveyList(prev => [...prev, s]);
 
   const totalReponses = surveyList.reduce((s, q) => s + q.nb_reponses, 0);

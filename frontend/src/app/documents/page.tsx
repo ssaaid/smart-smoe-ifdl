@@ -4,7 +4,7 @@
  */
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { downloadExport } from '@/lib/export';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -322,6 +322,9 @@ function DocumentRow({ doc, index }: { doc: typeof documents[0]; index: number }
 // ── Main Page ─────────────────────────────────────────────────────────────
 export default function DocumentsPage() {
   const [docs, setDocs] = useState(documents);
+  useEffect(() => {
+    api.get('/documents').then(r => { if (Array.isArray(r.data) && r.data.length) setDocs(r.data); }).catch(() => {});
+  }, []);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('tous');
   const [filterStatut, setFilterStatut] = useState('tous');

@@ -4,7 +4,7 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { downloadExport } from '@/lib/export';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -318,6 +318,9 @@ function AddRiskForm({ onClose, onAdd }: { onClose: () => void; onAdd: (r: any) 
 // ── Main Page ──────────────────────────────────────────────────
 export default function RisksPage() {
   const [riskList, setRiskList]   = useState(risks);
+  useEffect(() => {
+    api.get('/risks').then(r => { if (Array.isArray(r.data) && r.data.length) setRiskList(r.data); }).catch(() => {});
+  }, []);
   const [search, setSearch]       = useState('');
   const [filter, setFilter]       = useState<'all' | 'risque' | 'opportunite'>('all');
   const [showForm, setShowForm]   = useState(false);

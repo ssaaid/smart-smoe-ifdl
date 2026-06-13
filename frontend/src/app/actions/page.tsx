@@ -4,7 +4,7 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { downloadExport } from '@/lib/export';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -428,6 +428,9 @@ function ActionCard({
 // ── Main Page ─────────────────────────────────────────────────
 export default function ActionsPage() {
   const [actionList, setActionList] = useState(actions);
+  useEffect(() => {
+    api.get('/corrective-actions').then(r => { if (Array.isArray(r.data) && r.data.length) setActionList(r.data); }).catch(() => {});
+  }, []);
   const [search,   setSearch]   = useState('');
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);

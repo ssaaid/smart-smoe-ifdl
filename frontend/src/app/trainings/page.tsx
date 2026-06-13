@@ -4,7 +4,7 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { downloadExport } from '@/lib/export';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -290,6 +290,9 @@ export default function TrainingsPage() {
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [trainingList, setTrainingList] = useState(trainings);
+  useEffect(() => {
+    api.get('/trainings').then(r => { if (Array.isArray(r.data) && r.data.length) setTrainingList(r.data); }).catch(() => {});
+  }, []);
   const handleAdd = (t: any) => setTrainingList(prev => [t, ...prev]);
 
   const filtered = (tab: string) => trainingList.filter(t => {

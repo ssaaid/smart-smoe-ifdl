@@ -4,7 +4,7 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { downloadExport } from '@/lib/export';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -218,6 +218,9 @@ function DepotForm({ onClose, onAdd }: { onClose: () => void; onAdd: (c: any) =>
 // ── Main Page ──────────────────────────────────────────────────
 export default function ComplaintsPage() {
   const [complaintList, setComplaintList] = useState(complaints);
+  useEffect(() => {
+    api.get('/complaints').then(r => { if (Array.isArray(r.data) && r.data.length) setComplaintList(r.data); }).catch(() => {});
+  }, []);
   const [search, setSearch]     = useState('');
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState<typeof complaints[0] | null>(null);

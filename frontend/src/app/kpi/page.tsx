@@ -4,7 +4,7 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { downloadExport } from '@/lib/export';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -402,6 +402,10 @@ export default function KpiPage() {
   const [selectedKpi, setKpi]     = useState<typeof kpiList[0] | null>(null);
   const [saisieKpi, setSaisieKpi] = useState<typeof kpiList[0] | null>(null);
   const [showNewKpi, setShowNewKpi] = useState(false);
+
+  useEffect(() => {
+    api.get('/kpis').then(r => { if (Array.isArray(r.data) && r.data.length) setList(r.data); }).catch(() => {});
+  }, []);
 
   const handleAddKpi = (kpi: typeof kpiList[0]) => setList(prev => [...prev, kpi]);
 
