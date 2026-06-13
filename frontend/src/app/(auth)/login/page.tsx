@@ -40,10 +40,10 @@ const features = [
 ];
 
 const demoAccounts = [
+  { role: 'Admin Principal',     email: 'mr.salhysaaid@gmail.com',   color: 'bg-red-100 text-red-700' },
   { role: 'Administrateur',      email: 'admin@smoe-ifdl.ma',        color: 'bg-red-100 text-red-700' },
   { role: 'Resp. Qualité',       email: 'qualite@smoe-ifdl.ma',      color: 'bg-blue-100 text-blue-700' },
   { role: 'Coordonnateur',       email: 'coord@smoe-ifdl.ma',        color: 'bg-purple-100 text-purple-700' },
-  { role: 'Étudiant',            email: 'etudiant@smoe-ifdl.ma',     color: 'bg-green-100 text-green-700' },
 ];
 
 export default function LoginPage() {

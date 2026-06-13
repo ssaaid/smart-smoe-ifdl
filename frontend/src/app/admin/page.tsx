@@ -4,8 +4,9 @@
  */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '@/lib/api';
+import { useAuthStore } from '@/store/auth-store';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Settings, Plus, Search, Filter, User, Mail, Shield,
@@ -110,10 +111,16 @@ function AddUserForm({ onClose, onAdd }: { onClose: () => void; onAdd: (u: any) 
     setLoading(true); setError('');
     try {
       const { data } = await api.post('/auth/register', { nom, prenom, email, password, role, departement: departement || undefined });
-      onAdd(data);
+      onAdd(data.user ?? data);
       onClose();
     } catch (e: any) {
-      setError(e?.response?.data?.message || "Erreur lors de la création de l'utilisateur.");
+      const status = e?.response?.status;
+      const msg = e?.response?.data?.message;
+      if (status === 403) {
+        setError('Accès refusé — vous devez être connecté avec un compte administrateur.');
+      } else {
+        setError(Array.isArray(msg) ? msg.join(', ') : msg || "Erreur lors de la création de l'utilisateur.");
+      }
     } finally { setLoading(false); }
   };
 
@@ -190,21 +197,30 @@ function AddUserForm({ onClose, onAdd }: { onClose: () => void; onAdd: (u: any) 
 
 // ── Main Page ──────────────────────────────────────────────────
 export default function AdminPage() {
+  const currentUser = useAuthStore(s => s.user);
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [userList, setUserList] = useState(users);
+  const [userList, setUserList] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+
+  useEffect(() => {
+    api.get('/users')
+      .then((res: any) => setUserList(res.data ?? res))
+      .catch(() => {})
+      .finally(() => setLoadingUsers(false));
+  }, []);
 
   const filteredUsers = userList.filter(u =>
     `${u.prenom} ${u.nom}`.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase()) ||
-    u.departement.toLowerCase().includes(search.toLowerCase())
+    (u.departement ?? '').toLowerCase().includes(search.toLowerCase())
   );
 
   const stats = {
-    actifs:     userList.filter(u => u.is_active).length,
-    admins:     userList.filter(u => u.role === 'admin').length,
+    actifs:      userList.filter(u => u.is_active).length,
+    admins:      userList.filter(u => u.role === 'admin').length,
     enseignants: userList.filter(u => u.role === 'enseignant').length,
-    last_audit: '2026-06-01',
+    last_audit:  '2026-06-01',
   };
 
   return (
@@ -221,9 +237,20 @@ export default function AdminPage() {
             Gestion des utilisateurs · Configuration SMOE · Journaux système · ESEF Berrechid
           </p>
         </div>
-        <Button size="sm" className="text-xs gap-1" onClick={() => setShowForm(true)}>
-          <Plus className="h-3.5 w-3.5" /> Ajouter un utilisateur
-        </Button>
+        <div className="flex flex-col items-end gap-1">
+          {currentUser && (
+            <p className="text-[10px] text-muted-foreground">
+              Connecté : <span className="font-semibold text-foreground">{currentUser.prenom} {currentUser.nom}</span>
+              {' '}·{' '}
+              <span className={cn('font-semibold', currentUser.role === 'admin' ? 'text-red-600' : 'text-amber-600')}>
+                {currentUser.role}
+              </span>
+            </p>
+          )}
+          <Button size="sm" className="text-xs gap-1" onClick={() => setShowForm(true)}>
+            <Plus className="h-3.5 w-3.5" /> Ajouter un utilisateur
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -340,7 +367,7 @@ export default function AdminPage() {
                       <td>
                         <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                           <Clock className="h-2.5 w-2.5" />
-                          {formatRelativeDate(u.last_login)}
+                          {u.last_login ? formatRelativeDate(u.last_login) : '—'}
                         </span>
                       </td>
                       {/* Actions */}
@@ -452,7 +479,12 @@ export default function AdminPage() {
       </div>
 
       <AnimatePresence>
-        {showForm && <AddUserForm onClose={() => setShowForm(false)} onAdd={u => setUserList(prev => [...prev, u])} />}
+        {showForm && (
+          <AddUserForm
+            onClose={() => setShowForm(false)}
+            onAdd={u => setUserList(prev => [u, ...prev])}
+          />
+        )}
       </AnimatePresence>
     </div>
   );
