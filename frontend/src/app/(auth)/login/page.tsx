@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import Image from 'next/image';
 import {
   Shield, Eye, EyeOff, LogIn, AlertCircle,
   Award, Users, BarChart3, CheckCircle2, Lock, Mail,
@@ -94,8 +95,8 @@ export default function LoginPage() {
           {/* Logo & Title */}
           <div>
             <div className="flex items-center gap-3 mb-8">
-              <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center backdrop-blur-sm">
-                <Shield className="h-6 w-6 text-white" />
+              <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/25">
+                <Image src="/logo.jpeg" alt="ESEF Logo" width={48} height={48} className="object-cover w-full h-full" />
               </div>
               <div>
                 <h1 className="text-white font-bold text-xl leading-tight">SMART SMOE IFDL</h1>
@@ -160,8 +161,8 @@ export default function LoginPage() {
 
           {/* Mobile logo */}
           <div className="flex items-center gap-3 lg:hidden">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-              <Shield className="h-5 w-5 text-white" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden">
+              <Image src="/logo.jpeg" alt="ESEF Logo" width={40} height={40} className="object-cover w-full h-full" />
             </div>
             <div>
               <h1 className="font-bold text-lg leading-tight">SMART SMOE IFDL</h1>
