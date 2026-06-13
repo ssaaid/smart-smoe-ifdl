@@ -136,6 +136,9 @@ export default function LoginPage() {
 
           {/* Footer */}
           <div className="flex items-center gap-4 pt-8 border-t border-white/10">
+            <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-white/10">
+              <Image src="/logo-esef.jpg" alt="ESEF Berrechid" width={40} height={40} className="object-contain w-full h-full" />
+            </div>
             <div>
               <p className="text-white/90 text-xs font-semibold">ESEF Berrechid</p>
               <p className="text-blue-300/70 text-[11px]">Université Hassan 1er · Settat</p>
