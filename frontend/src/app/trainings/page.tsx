@@ -5,6 +5,7 @@
 'use client';
 
 import { useState } from 'react';
+import { downloadExport } from '@/lib/export';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   GraduationCap, Plus, Search, Filter, Star, StarHalf,
@@ -288,7 +289,12 @@ export default function TrainingsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="text-xs gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs gap-1"
+            onClick={() => downloadExport('trainings', 'pdf', 'formations.pdf')}
+          >
             <Download className="h-3.5 w-3.5" /> Export PDF
           </Button>
           <Button size="sm" className="text-xs gap-1" onClick={() => setShowForm(true)}>

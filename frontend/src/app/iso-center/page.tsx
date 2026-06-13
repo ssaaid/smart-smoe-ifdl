@@ -5,6 +5,7 @@
 'use client';
 
 import { useState } from 'react';
+import { downloadExport } from '@/lib/export';
 import { motion } from 'framer-motion';
 import {
   Shield, Award, TrendingUp, CheckCircle2, AlertCircle,
@@ -191,7 +192,11 @@ export default function IsoCenterPage() {
           <Button size="sm" variant="outline" className="text-xs gap-1">
             <RefreshCw className="h-3.5 w-3.5" /> Réévaluer
           </Button>
-          <Button size="sm" className="text-xs gap-1">
+          <Button
+            size="sm"
+            className="text-xs gap-1"
+            onClick={() => downloadExport('iso-center', 'pdf', 'rapport-gap-iso21001.pdf')}
+          >
             <Download className="h-3.5 w-3.5" /> Rapport GAP
           </Button>
         </div>

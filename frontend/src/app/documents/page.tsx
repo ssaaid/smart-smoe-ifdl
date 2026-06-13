@@ -5,6 +5,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { downloadExport } from '@/lib/export';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FolderOpen, Plus, Search, Filter, Eye, Download, Edit2,
@@ -363,7 +364,12 @@ export default function DocumentsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="text-xs gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs gap-1"
+            onClick={() => downloadExport('documents', 'xlsx', 'documents.xlsx')}
+          >
             <Download className="h-3.5 w-3.5" /> Exporter
           </Button>
           <Button size="sm" className="text-xs gap-1" onClick={() => setShowUpload(true)}>

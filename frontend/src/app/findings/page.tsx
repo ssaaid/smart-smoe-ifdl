@@ -5,6 +5,7 @@
 'use client';
 
 import { useState } from 'react';
+import { downloadExport } from '@/lib/export';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileX, Plus, Search, Filter, Calendar, User,
@@ -255,7 +256,12 @@ export default function FindingsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="text-xs gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs gap-1"
+            onClick={() => downloadExport('findings', 'xlsx', 'constats.xlsx')}
+          >
             <Download className="h-3.5 w-3.5" /> Export
           </Button>
           <Button size="sm" className="text-xs gap-1" onClick={() => setShowForm(true)}>

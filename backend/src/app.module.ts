@@ -29,6 +29,9 @@ import { IsoCenterModule } from './iso-center/iso-center.module';
 import { CompetenciesModule } from './competencies/competencies.module';
 import { HealthModule } from './health/health.module';
 
+// Export
+import { ExportModule } from './common/export/export.module';
+
 // Guards
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
@@ -105,6 +108,9 @@ import { AuditTrail } from './common/entities/audit-trail.entity';
       },
       inject: [ConfigService],
     }),
+
+    // ── Export (Global) ────────────────────────────────────
+    ExportModule,
 
     // ── Feature Modules ────────────────────────────────────
     AuthModule,

@@ -1,20 +1,50 @@
 import {
-  Controller, Get, Post, Patch, Delete, Param, Body,
+  Controller, Get, Post, Patch, Delete, Param, Body, Query, Res,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { Response } from 'express';
 import { SatisfactionService } from './satisfaction.service';
 import { SatisfactionSurvey } from './entities/survey.entity';
+import { ExportService } from '../common/export/export.service';
 
 @ApiTags('Satisfaction')
 @ApiBearerAuth('access-token')
 @Controller('satisfaction')
 export class SatisfactionController {
-  constructor(private readonly satisfactionService: SatisfactionService) {}
+  constructor(
+    private readonly satisfactionService: SatisfactionService,
+    private readonly exportService: ExportService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Liste toutes les enquêtes de satisfaction' })
   findAll(): Promise<SatisfactionSurvey[]> {
     return this.satisfactionService.findAll();
+  }
+
+  @Get('export')
+  @ApiOperation({ summary: 'Export enquêtes de satisfaction (xlsx ou pdf)' })
+  async export(@Query('format') format = 'xlsx', @Res() res: Response) {
+    const data = await this.satisfactionService.findAll();
+    const cols = [
+      { key: 'titre', header: 'Titre', width: 30 },
+      { key: 'type', header: 'Type', width: 16 },
+      { key: 'statut', header: 'Statut', width: 14 },
+      { key: 'score_moyen', header: 'Score moyen', width: 14 },
+      { key: 'nb_reponses', header: 'Réponses', width: 12 },
+      { key: 'date_debut', header: 'Début', width: 14 },
+      { key: 'date_fin', header: 'Fin', width: 14 },
+    ];
+    const rows = data.map((d) => ({
+      ...d,
+      date_debut: d.date_debut ? new Date(d.date_debut).toLocaleDateString('fr-FR') : '',
+      date_fin: d.date_fin ? new Date(d.date_fin).toLocaleDateString('fr-FR') : '',
+    }));
+    if (format === 'pdf') {
+      this.exportService.toPdf(res, 'satisfaction', 'Enquêtes de Satisfaction', cols, rows);
+    } else {
+      await this.exportService.toExcel(res, 'satisfaction', 'Satisfaction', cols, rows);
+    }
   }
 
   @Get(':id')

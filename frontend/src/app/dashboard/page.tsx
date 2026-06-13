@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { downloadExport } from '@/lib/export';
 import { motion } from 'framer-motion';
 import {
   TrendingUp, TrendingDown, AlertTriangle, CheckCircle2,
@@ -222,7 +223,11 @@ export default function DashboardPage() {
           <Button size="sm" variant="outline" className="gap-1 text-xs">
             <RefreshCw className="h-3.5 w-3.5" /> Actualiser
           </Button>
-          <Button size="sm" className="gap-1 text-xs">
+          <Button
+            size="sm"
+            className="gap-1 text-xs"
+            onClick={() => downloadExport('kpis', 'xlsx', 'dashboard-kpis.xlsx')}
+          >
             <Download className="h-3.5 w-3.5" /> Exporter
           </Button>
         </div>

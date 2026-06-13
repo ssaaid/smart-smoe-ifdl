@@ -5,6 +5,7 @@
 'use client';
 
 import { useState } from 'react';
+import { downloadExport } from '@/lib/export';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   GitBranch, Target, FileText, BarChart2, ArrowRight,
@@ -540,7 +541,12 @@ function ProcessDetail({ process, onClose }: { process: typeof processes[0]; onC
             <Button size="sm" className={cn('flex-1 text-xs gap-1 h-7')}>
               <FileText className="h-3 w-3" /> Procédures
             </Button>
-            <Button size="sm" variant="outline" className="text-xs gap-1 h-7 px-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs gap-1 h-7 px-2"
+              onClick={() => downloadExport('processes', 'pdf', 'processus.pdf')}
+            >
               <Download className="h-3 w-3" />
             </Button>
           </div>
@@ -575,7 +581,12 @@ export default function ProcessesPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="text-xs gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs gap-1"
+            onClick={() => downloadExport('processes', 'xlsx', 'processus.xlsx')}
+          >
             <Download className="h-3.5 w-3.5" /> Exporter
           </Button>
         </div>

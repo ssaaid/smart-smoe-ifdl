@@ -5,6 +5,7 @@
 'use client';
 
 import { useState } from 'react';
+import { downloadExport } from '@/lib/export';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Target, Plus, Search, Filter, TrendingUp, TrendingDown,
@@ -159,6 +160,159 @@ function TauxRealisation({ valeur, cible }: { valeur: number; cible: number }) {
   );
 }
 
+// ── Nouveau KPI Modal ──────────────────────────────────────────
+const AXES    = ['Pédagogie', 'Satisfaction', 'Employabilité', 'Infrastructure', 'Réclamations', 'Qualité', 'Recherche', 'ISO', 'Autre'];
+const FREQS   = ['mensuel', 'trimestriel', 'semestriel', 'annuel'];
+const PROCESS = ['PR-01', 'PR-02', 'PR-03', 'PR-04', 'PR-05'];
+
+interface NouveauKpiForm {
+  libelle: string; code: string; unite: string;
+  valeur_cible: string; seuil_alerte: string;
+  frequence: string; process: string; axe: string; responsable: string;
+}
+const FORM_INIT: NouveauKpiForm = {
+  libelle: '', code: '', unite: '%',
+  valeur_cible: '', seuil_alerte: '',
+  frequence: 'semestriel', process: 'PR-01', axe: 'Qualité', responsable: '',
+};
+
+function NouveauKpiModal({ onClose, onAdd }: { onClose: () => void; onAdd: (kpi: typeof kpiList[0]) => void }) {
+  const [form, setForm] = useState<NouveauKpiForm>(FORM_INIT);
+  const [errors, setErrors] = useState<Partial<NouveauKpiForm>>({});
+
+  const set = (field: keyof NouveauKpiForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm(f => ({ ...f, [field]: e.target.value }));
+
+  const validate = () => {
+    const e: Partial<NouveauKpiForm> = {};
+    if (!form.libelle.trim()) e.libelle = 'Requis';
+    if (!form.code.trim())    e.code    = 'Requis';
+    if (!form.unite.trim())   e.unite   = 'Requis';
+    if (!form.valeur_cible || isNaN(Number(form.valeur_cible))) e.valeur_cible = 'Nombre requis';
+    if (!form.seuil_alerte || isNaN(Number(form.seuil_alerte))) e.seuil_alerte = 'Nombre requis';
+    if (!form.responsable.trim()) e.responsable = 'Requis';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (!validate()) return;
+    onAdd({
+      id: Date.now(),
+      code: form.code.toUpperCase(),
+      libelle: form.libelle,
+      valeur_actuelle: 0,
+      valeur_cible: Number(form.valeur_cible),
+      seuil_alerte: Number(form.seuil_alerte),
+      unite: form.unite,
+      statut: 'orange',
+      frequence: form.frequence,
+      process: form.process,
+      axe: form.axe,
+      responsable: form.responsable,
+      historique: [],
+    });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-card border border-border rounded-xl p-5 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Target className="h-4 w-4 text-primary" /> Nouveau KPI
+            </h3>
+            <p className="text-xs text-muted-foreground">Créer un nouvel indicateur de performance</p>
+          </div>
+          <button onClick={onClose}><X className="h-4 w-4 text-muted-foreground hover:text-foreground" /></button>
+        </div>
+
+        <div className="space-y-3">
+          {/* Libellé */}
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Libellé <span className="text-red-500">*</span></Label>
+            <Input value={form.libelle} onChange={set('libelle')} placeholder="Ex: Taux de satisfaction des étudiants" className="h-9 text-sm" />
+            {errors.libelle && <p className="text-[10px] text-red-500">{errors.libelle}</p>}
+          </div>
+
+          {/* Code + Unité */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Code <span className="text-red-500">*</span></Label>
+              <Input value={form.code} onChange={set('code')} placeholder="Ex: KPI-11" className="h-9 text-sm font-mono" />
+              {errors.code && <p className="text-[10px] text-red-500">{errors.code}</p>}
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Unité <span className="text-red-500">*</span></Label>
+              <Input value={form.unite} onChange={set('unite')} placeholder="%, jours, pub., …" className="h-9 text-sm" />
+              {errors.unite && <p className="text-[10px] text-red-500">{errors.unite}</p>}
+            </div>
+          </div>
+
+          {/* Cible + Seuil */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Valeur cible <span className="text-red-500">*</span></Label>
+              <Input type="number" step="0.1" value={form.valeur_cible} onChange={set('valeur_cible')} placeholder="Ex: 85" className="h-9 text-sm" />
+              {errors.valeur_cible && <p className="text-[10px] text-red-500">{errors.valeur_cible}</p>}
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Seuil d'alerte <span className="text-red-500">*</span></Label>
+              <Input type="number" step="0.1" value={form.seuil_alerte} onChange={set('seuil_alerte')} placeholder="Ex: 75" className="h-9 text-sm" />
+              {errors.seuil_alerte && <p className="text-[10px] text-red-500">{errors.seuil_alerte}</p>}
+            </div>
+          </div>
+
+          {/* Fréquence + Processus */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Fréquence</Label>
+              <select value={form.frequence} onChange={set('frequence')} className="w-full h-9 text-sm rounded-md border border-input bg-background px-3 focus:outline-none focus:ring-2 focus:ring-ring">
+                {FREQS.map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Processus</Label>
+              <select value={form.process} onChange={set('process')} className="w-full h-9 text-sm rounded-md border border-input bg-background px-3 focus:outline-none focus:ring-2 focus:ring-ring">
+                {PROCESS.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Axe + Responsable */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Axe stratégique</Label>
+              <select value={form.axe} onChange={set('axe')} className="w-full h-9 text-sm rounded-md border border-input bg-background px-3 focus:outline-none focus:ring-2 focus:ring-ring">
+                {AXES.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Responsable <span className="text-red-500">*</span></Label>
+              <Input value={form.responsable} onChange={set('responsable')} placeholder="Nom du responsable" className="h-9 text-sm" />
+              {errors.responsable && <p className="text-[10px] text-red-500">{errors.responsable}</p>}
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="flex gap-2 pt-1">
+            <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose}>Annuler</Button>
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSubmit}>
+              <Save className="h-3 w-3" /> Créer le KPI
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ── Saisie Modal ───────────────────────────────────────────────
 function SaisieModal({ kpi, onClose }: { kpi: typeof kpiList[0]; onClose: () => void }) {
   const [valeur, setValeur] = useState('');
@@ -230,12 +384,16 @@ function SaisieModal({ kpi, onClose }: { kpi: typeof kpiList[0]; onClose: () => 
 
 // ── Main Page ──────────────────────────────────────────────────
 export default function KpiPage() {
+  const [list, setList]           = useState(kpiList);
   const [search, setSearch]       = useState('');
   const [filterStatut, setFilter] = useState<'all' | 'vert' | 'orange' | 'rouge'>('all');
   const [selectedKpi, setKpi]     = useState<typeof kpiList[0] | null>(null);
   const [saisieKpi, setSaisieKpi] = useState<typeof kpiList[0] | null>(null);
+  const [showNewKpi, setShowNewKpi] = useState(false);
 
-  const filtered = kpiList.filter(k => {
+  const handleAddKpi = (kpi: typeof kpiList[0]) => setList(prev => [...prev, kpi]);
+
+  const filtered = list.filter(k => {
     const matchSearch = k.libelle.toLowerCase().includes(search.toLowerCase()) ||
                         k.code.toLowerCase().includes(search.toLowerCase());
     const matchStatut = filterStatut === 'all' || k.statut === filterStatut;
@@ -243,9 +401,9 @@ export default function KpiPage() {
   });
 
   const summary = {
-    vert:   kpiList.filter(k => k.statut === 'vert').length,
-    orange: kpiList.filter(k => k.statut === 'orange').length,
-    rouge:  kpiList.filter(k => k.statut === 'rouge').length,
+    vert:   list.filter(k => k.statut === 'vert').length,
+    orange: list.filter(k => k.statut === 'orange').length,
+    rouge:  list.filter(k => k.statut === 'rouge').length,
   };
 
   return (
@@ -259,17 +417,22 @@ export default function KpiPage() {
             KPI & Indicateurs de Performance
           </h1>
           <p className="page-subtitle">
-            {kpiList.length} indicateurs · Année universitaire 2025–2026 · Master IFDL
+            {list.length} indicateurs · Année universitaire 2025–2026 · Master IFDL
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="text-xs gap-1">
             <RefreshCw className="h-3.5 w-3.5" /> Actualiser
           </Button>
-          <Button variant="outline" size="sm" className="text-xs gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs gap-1"
+            onClick={() => downloadExport('kpis', 'xlsx', 'kpis.xlsx')}
+          >
             <Download className="h-3.5 w-3.5" /> Export Excel
           </Button>
-          <Button size="sm" className="text-xs gap-1">
+          <Button size="sm" className="text-xs gap-1" onClick={() => setShowNewKpi(true)}>
             <Plus className="h-3.5 w-3.5" /> Nouveau KPI
           </Button>
         </div>
@@ -278,7 +441,7 @@ export default function KpiPage() {
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Total KPI', value: kpiList.length, color: 'text-foreground', bg: 'bg-muted/50' },
+          { label: 'Total KPI', value: list.length, color: 'text-foreground', bg: 'bg-muted/50' },
           { label: '✓ Atteints', value: summary.vert,   color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-950/30' },
           { label: '⚠ En alerte', value: summary.orange, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30' },
           { label: '✗ Critiques', value: summary.rouge,  color: 'text-red-600',   bg: 'bg-red-50 dark:bg-red-950/30' },
@@ -287,7 +450,7 @@ export default function KpiPage() {
             <p className="stat-label">{s.label}</p>
             <p className={cn('text-3xl font-bold', s.color)}>{s.value}</p>
             <p className="text-[10px] text-muted-foreground">
-              {Math.round((s.value as number / kpiList.length) * 100)}% du total
+              {Math.round((s.value as number / list.length) * 100)}% du total
             </p>
           </Card>
         ))}
@@ -442,7 +605,7 @@ export default function KpiPage() {
         {/* ── Évolution Tab ─────────────────────────────── */}
         <TabsContent value="evolution" className="mt-4 space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {kpiList.filter(k => k.historique.length >= 4).slice(0, 4).map(kpi => {
+            {list.filter(k => k.historique.length >= 4).slice(0, 4).map(kpi => {
               const cfg = statutConfig[kpi.statut as keyof typeof statutConfig];
               return (
                 <Card key={kpi.id}>
@@ -475,7 +638,7 @@ export default function KpiPage() {
         {/* ── Alertes Tab ───────────────────────────────── */}
         <TabsContent value="alertes" className="mt-4">
           <div className="space-y-3">
-            {kpiList.filter(k => k.statut !== 'vert').map(kpi => {
+            {list.filter(k => k.statut !== 'vert').map(kpi => {
               const cfg = statutConfig[kpi.statut as keyof typeof statutConfig];
               const gap = kpi.valeur_cible - kpi.valeur_actuelle;
               return (
@@ -516,6 +679,13 @@ export default function KpiPage() {
       <AnimatePresence>
         {saisieKpi && (
           <SaisieModal kpi={saisieKpi} onClose={() => setSaisieKpi(null)} />
+        )}
+      </AnimatePresence>
+
+      {/* Nouveau KPI Modal */}
+      <AnimatePresence>
+        {showNewKpi && (
+          <NouveauKpiModal onClose={() => setShowNewKpi(false)} onAdd={handleAddKpi} />
         )}
       </AnimatePresence>
     </div>

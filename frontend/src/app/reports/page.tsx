@@ -5,6 +5,7 @@
 'use client';
 
 import { useState } from 'react';
+import { downloadExport } from '@/lib/export';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart3, Plus, Search, Filter, FileText, Download,
@@ -213,7 +214,12 @@ export default function ReportsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="text-xs gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs gap-1"
+            onClick={() => downloadExport('reports', 'xlsx', 'rapports.xlsx')}
+          >
             <Download className="h-3.5 w-3.5" /> Export
           </Button>
           <Button size="sm" className="text-xs gap-1" onClick={() => setShowForm(true)}>
@@ -338,7 +344,12 @@ export default function ReportsPage() {
             <Button size="sm" variant="outline" className="text-xs gap-1 h-7">
               <Eye className="h-3 w-3" /> Voir le rapport
             </Button>
-            <Button size="sm" variant="outline" className="text-xs gap-1 h-7">
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs gap-1 h-7"
+              onClick={() => downloadExport('reports', 'pdf', 'rapports.pdf')}
+            >
               <Download className="h-3 w-3" /> Télécharger PDF
             </Button>
             <Button size="sm" variant="outline" className="text-xs gap-1 h-7">

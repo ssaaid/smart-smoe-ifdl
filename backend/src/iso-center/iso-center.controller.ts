@@ -1,15 +1,20 @@
 import {
-  Controller, Get, Post, Patch, Delete, Param, Body,
+  Controller, Get, Post, Patch, Delete, Param, Body, Query, Res,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { Response } from 'express';
 import { IsoCenterService } from './iso-center.service';
 import { IsoClause, MaturityAssessment } from './entities/iso.entity';
+import { ExportService } from '../common/export/export.service';
 
 @ApiTags('ISO Center')
 @ApiBearerAuth('access-token')
 @Controller('iso-center')
 export class IsoCenterController {
-  constructor(private readonly isoCenterService: IsoCenterService) {}
+  constructor(
+    private readonly isoCenterService: IsoCenterService,
+    private readonly exportService: ExportService,
+  ) {}
 
   @Get('clauses')
   @ApiOperation({ summary: 'Liste toutes les clauses ISO 21001' })
@@ -57,5 +62,22 @@ export class IsoCenterController {
   @ApiOperation({ summary: 'Dernier score de maturité ISO' })
   getLatestMaturityScore() {
     return this.isoCenterService.getLatestMaturityScore();
+  }
+
+  @Get('export')
+  @ApiOperation({ summary: 'Export rapport GAP ISO 21001 (xlsx ou pdf)' })
+  async export(@Query('format') format = 'xlsx', @Res() res: Response) {
+    const clauses = await this.isoCenterService.findAllClauses();
+    const cols = [
+      { key: 'code', header: 'Clause', width: 10 },
+      { key: 'titre', header: 'Titre', width: 35 },
+      { key: 'description', header: 'Description', width: 45 },
+      { key: 'exigences', header: 'Exigences', width: 45 },
+    ];
+    if (format === 'pdf') {
+      this.exportService.toPdf(res, 'rapport-gap-iso21001', 'Rapport GAP ISO 21001', cols, clauses);
+    } else {
+      await this.exportService.toExcel(res, 'rapport-gap-iso21001', 'ISO 21001 GAP', cols, clauses);
+    }
   }
 }

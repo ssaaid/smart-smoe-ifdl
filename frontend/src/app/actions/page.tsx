@@ -5,6 +5,7 @@
 'use client';
 
 import { useState } from 'react';
+import { downloadExport } from '@/lib/export';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Wrench, Plus, Search, Filter, Download, X, User, Calendar,
@@ -443,7 +444,12 @@ export default function ActionsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="text-xs gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs gap-1"
+            onClick={() => downloadExport('corrective-actions', 'xlsx', 'actions-correctives.xlsx')}
+          >
             <Download className="h-3.5 w-3.5" /> Export
           </Button>
           <Button size="sm" className="text-xs gap-1" onClick={() => setShowForm(true)}>

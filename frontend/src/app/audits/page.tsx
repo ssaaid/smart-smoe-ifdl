@@ -5,6 +5,7 @@
 'use client';
 
 import { useState } from 'react';
+import { downloadExport } from '@/lib/export';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ClipboardCheck, Plus, Search, Filter, Calendar, User,
@@ -177,7 +178,12 @@ export default function AuditsPage() {
             <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
               <Filter className="h-3.5 w-3.5" /> Filtrer
             </Button>
-            <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs gap-1"
+              onClick={() => downloadExport('audits', 'xlsx', 'audits.xlsx')}
+            >
               <Download className="h-3.5 w-3.5" /> Export
             </Button>
           </div>
@@ -282,7 +288,12 @@ export default function AuditsPage() {
                             <Button size="sm" variant="outline" className="text-xs gap-1 h-7">
                               <FileText className="h-3 w-3" /> Constats ({audit.nc_majeures + audit.nc_mineures + audit.observations})
                             </Button>
-                            <Button size="sm" variant="outline" className="text-xs gap-1 h-7">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs gap-1 h-7"
+                              onClick={() => downloadExport('audits', 'pdf', 'rapport-audits.pdf')}
+                            >
                               <Download className="h-3 w-3" /> Rapport PDF
                             </Button>
                           </div>

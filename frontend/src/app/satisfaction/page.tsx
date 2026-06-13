@@ -6,6 +6,7 @@
 'use client';
 
 import { useState } from 'react';
+import { downloadExport } from '@/lib/export';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Smile, Plus, Download, TrendingUp, TrendingDown, Minus,
@@ -319,7 +320,12 @@ export default function SatisfactionPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="text-xs gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs gap-1"
+            onClick={() => downloadExport('satisfaction', 'xlsx', 'satisfaction.xlsx')}
+          >
             <Download className="h-3.5 w-3.5" /> Export
           </Button>
           <Button size="sm" className="text-xs gap-1" onClick={() => setShowForm(true)}>

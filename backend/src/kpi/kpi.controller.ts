@@ -1,19 +1,24 @@
 import {
   Controller, Get, Post, Patch, Delete,
-  Param, Body, Query,
+  Param, Body, Query, Res,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { Response } from 'express';
 import { KpiService } from './kpi.service';
 import { CreateKpiDto } from './dto/create-kpi.dto';
 import { UpdateKpiDto } from './dto/update-kpi.dto';
 import { AddMesureDto } from './dto/add-mesure.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { ExportService } from '../common/export/export.service';
 
 @ApiTags('KPIs')
 @ApiBearerAuth('access-token')
 @Controller('kpis')
 export class KpiController {
-  constructor(private readonly kpiService: KpiService) {}
+  constructor(
+    private readonly kpiService: KpiService,
+    private readonly exportService: ExportService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: 'Liste tous les KPIs' })
@@ -38,6 +43,27 @@ export class KpiController {
   @ApiOperation({ summary: 'Analyse des écarts KPI' })
   getGapAnalysis() {
     return this.kpiService.getGapAnalysis();
+  }
+
+  @Get('export')
+  @ApiOperation({ summary: 'Export KPIs (xlsx ou pdf)' })
+  async export(@Query('format') format = 'xlsx', @Res() res: Response) {
+    const data = await this.kpiService.findAll();
+    const cols = [
+      { key: 'code', header: 'Code', width: 12 },
+      { key: 'libelle', header: 'Libellé', width: 30 },
+      { key: 'unite', header: 'Unité', width: 12 },
+      { key: 'frequence', header: 'Fréquence', width: 14 },
+      { key: 'valeur_cible', header: 'Cible', width: 10 },
+      { key: 'valeur_actuelle', header: 'Actuelle', width: 12 },
+      { key: 'seuil_alerte', header: 'Seuil', width: 10 },
+      { key: 'statut', header: 'Statut', width: 12 },
+    ];
+    if (format === 'pdf') {
+      this.exportService.toPdf(res, 'kpis', 'Tableau de Bord KPIs', cols, data);
+    } else {
+      await this.exportService.toExcel(res, 'kpis', 'KPIs', cols, data);
+    }
   }
 
   @Get(':id')
