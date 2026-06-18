@@ -5,7 +5,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { downloadExport } from '@/lib/export';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -13,13 +12,16 @@ import {
   ChevronRight, CheckCircle2, AlertCircle, TrendingUp,
   FileText, Send, Inbox, History,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+
+// ── Types ─────────────────────────────────────────────────────
+type Action = typeof actions[0];
 
 // ── Mock data ─────────────────────────────────────────────────
 const actions = [
@@ -30,7 +32,7 @@ const actions = [
     echeance: '2026-07-15', statut: 'en_cours', avancement: 60,
     description: "Élaboration d'une procédure complète de gestion des informations documentées conforme à l'ISO 21001.",
     actions_realisees: 'Analyse des besoins réalisée. Structure procédure validée. Rédaction en cours (chapitre 1-3/5 complétés).',
-    efficacite: null, date_creation: '2026-03-20',
+    efficacite: null as string | null, date_creation: '2026-03-20',
     historique: [
       { date: '2026-03-20', action: 'Action créée suite NC-2026-001', auteur: 'Resp. Qualité' },
       { date: '2026-04-05', action: 'Analyse des pratiques existantes', auteur: 'Resp. Qualité' },
@@ -44,7 +46,7 @@ const actions = [
     echeance: '2026-08-01', statut: 'en_cours', avancement: 30,
     description: "Le programme d'audit doit couvrir l'ensemble des processus SMOE sur un cycle de 3 ans.",
     actions_realisees: 'Cartographie des processus à auditer réalisée. Planning révisé pour H2 2026.',
-    efficacite: null, date_creation: '2026-03-25',
+    efficacite: null as string | null, date_creation: '2026-03-25',
     historique: [
       { date: '2026-03-25', action: "Planification de l'action", auteur: 'Coord. Qualité' },
       { date: '2026-04-20', action: 'Nouveau programme validé par la direction', auteur: 'Direction' },
@@ -55,9 +57,9 @@ const actions = [
     titre: 'Organiser la revue de direction S1 2026',
     source: 'NC-2026-003', responsable: 'Direction',
     echeance: '2026-04-30', statut: 'cloturee', avancement: 100,
-    description: 'Mise en place d\'un calendrier strict des revues de direction avec rappels automatiques.',
+    description: "Mise en place d'un calendrier strict des revues de direction avec rappels automatiques.",
     actions_realisees: 'Revue de direction S1 organisée le 15/04. CR validé et diffusé. Calendrier 2026-2027 établi.',
-    efficacite: 'efficace', date_creation: '2026-03-22',
+    efficacite: 'efficace' as string | null, date_creation: '2026-03-22',
     historique: [
       { date: '2026-03-22', action: 'Action initiée', auteur: 'Direction' },
       { date: '2026-04-15', action: 'Revue de direction réalisée', auteur: 'Direction' },
@@ -70,7 +72,7 @@ const actions = [
     source: 'Identification proactive', responsable: 'SI + Resp. Qualité',
     echeance: '2026-09-01', statut: 'ouverte', avancement: 0,
     description: 'Système de notifications automatiques 30j, 15j et 7j avant échéances des actions et indicateurs.',
-    actions_realisees: '', efficacite: null, date_creation: '2026-05-01',
+    actions_realisees: '', efficacite: null as string | null, date_creation: '2026-05-01',
     historique: [
       { date: '2026-05-01', action: 'Action préventive identifiée', auteur: 'Resp. Qualité' },
     ],
@@ -80,9 +82,9 @@ const actions = [
     titre: 'Digitaliser les enquêtes de satisfaction étudiants',
     source: 'Revue de direction 2025', responsable: 'Coord. Digital',
     echeance: '2026-10-01', statut: 'en_cours', avancement: 45,
-    description: 'Remplacer les formulaires papier par une plateforme digitale d\'enquête satisfaction.',
+    description: "Remplacer les formulaires papier par une plateforme digitale d'enquête satisfaction.",
     actions_realisees: 'Cahier des charges rédigé. 3 outils évalués (Typeform, SurveyMonkey, formulaire interne). Choix validé.',
-    efficacite: null, date_creation: '2026-04-01',
+    efficacite: null as string | null, date_creation: '2026-04-01',
     historique: [
       { date: '2026-04-01', action: 'Amélioration proposée', auteur: 'Coord. Digital' },
       { date: '2026-05-10', action: 'Benchmark outils terminé', auteur: 'Coord. Digital' },
@@ -95,7 +97,7 @@ const actions = [
     echeance: '2026-07-01', statut: 'en_cours', avancement: 70,
     description: 'Mise à jour de 100% des fiches de compétences personnel et enseignants.',
     actions_realisees: '30 fiches sur 43 mises à jour. Relances envoyées aux 13 restants.',
-    efficacite: null, date_creation: '2026-04-05',
+    efficacite: null as string | null, date_creation: '2026-04-05',
     historique: [
       { date: '2026-04-05', action: 'Campagne lancée', auteur: 'RH' },
       { date: '2026-05-20', action: '70% des fiches traitées', auteur: 'RH' },
@@ -107,7 +109,7 @@ const actions = [
     source: 'NC-2026-007', responsable: 'Coord. Comm.',
     echeance: '2026-10-01', statut: 'ouverte', avancement: 0,
     description: 'Améliorer la visibilité des résultats et indicateurs SMOE auprès de toutes les parties prenantes.',
-    actions_realisees: '', efficacite: null, date_creation: '2026-06-05',
+    actions_realisees: '', efficacite: null as string | null, date_creation: '2026-06-05',
     historique: [
       { date: '2026-06-05', action: 'Action créée', auteur: 'Coord. Comm.' },
     ],
@@ -118,12 +120,103 @@ const actions = [
     source: 'NC-2026-004', responsable: 'Coord. Pédago',
     echeance: '2026-09-01', statut: 'ouverte', avancement: 0,
     description: 'Systématiser la mesure du taux de satisfaction étudiant après chaque semestre.',
-    actions_realisees: '', efficacite: null, date_creation: '2026-04-15',
+    actions_realisees: '', efficacite: null as string | null, date_creation: '2026-04-15',
     historique: [
       { date: '2026-04-15', action: 'Action planifiée', auteur: 'Coord. Pédago' },
     ],
   },
 ];
+
+// ── Normalize API response ────────────────────────────────────
+function normalize(a: any): Action {
+  return {
+    id:               a.id,
+    code:             a.code             ?? '',
+    type:             a.type             ?? 'corrective',
+    titre:            a.titre            ?? a.description?.slice(0, 60) ?? '(sans titre)',
+    source:           a.source           ?? '',
+    responsable:      a.responsable      ?? '-',
+    echeance:         a.echeance         ? String(a.echeance).slice(0, 10) : '-',
+    statut:           a.statut           ?? 'ouverte',
+    avancement:       a.avancement       ?? 0,
+    description:      a.description      ?? '',
+    actions_realisees: a.actions_realisees ?? '',
+    efficacite:       a.efficacite       ?? null,
+    date_creation:    a.date_creation    ?? a.created_at?.slice(0, 10) ?? '',
+    historique:       Array.isArray(a.historique) ? a.historique : [],
+  };
+}
+
+// ── Print helpers ─────────────────────────────────────────────
+function printAction(a: Action) {
+  const w = window.open('', '_blank');
+  if (!w) return;
+  const typeLabel = { corrective: 'Corrective', preventive: 'Préventive', amelioration: 'Amélioration' }[a.type] ?? a.type;
+  const statutLabel = { ouverte: 'Ouverte', en_cours: 'En cours', cloturee: 'Clôturée', annulee: 'Annulée' }[a.statut] ?? a.statut;
+  const histRows = (a.historique ?? []).map((h: any) => `
+    <tr>
+      <td style="padding:4px 8px;border:1px solid #ddd;">${h.date ?? ''}</td>
+      <td style="padding:4px 8px;border:1px solid #ddd;">${h.action ?? ''}</td>
+      <td style="padding:4px 8px;border:1px solid #ddd;">${h.auteur ?? ''}</td>
+    </tr>`).join('');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>Fiche Action ${a.code}</title>
+  <style>body{font-family:Arial,sans-serif;font-size:12px;padding:24px;color:#222;}
+  h2{color:#1a56db;margin-bottom:4px;}h3{margin-top:16px;margin-bottom:4px;color:#374151;}
+  table{border-collapse:collapse;width:100%;}th{background:#f3f4f6;padding:4px 8px;border:1px solid #ddd;text-align:left;}
+  .badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;}
+  </style></head><body>
+  <h2>Fiche Action Corrective / Préventive</h2>
+  <p style="color:#6b7280;margin-top:0">SMART SMOE IFDL · ESEF Berrechid · ISO 21001 §10.2</p>
+  <table style="margin-top:12px"><tbody>
+    <tr><th>Code</th><td style="padding:4px 8px;border:1px solid #ddd">${a.code}</td>
+        <th>Type</th><td style="padding:4px 8px;border:1px solid #ddd">${typeLabel}</td></tr>
+    <tr><th>Statut</th><td style="padding:4px 8px;border:1px solid #ddd">${statutLabel}</td>
+        <th>Avancement</th><td style="padding:4px 8px;border:1px solid #ddd">${a.avancement}%</td></tr>
+    <tr><th>Source</th><td style="padding:4px 8px;border:1px solid #ddd">${a.source}</td>
+        <th>Échéance</th><td style="padding:4px 8px;border:1px solid #ddd">${a.echeance}</td></tr>
+    <tr><th>Responsable</th><td colspan="3" style="padding:4px 8px;border:1px solid #ddd">${a.responsable}</td></tr>
+  </tbody></table>
+  <h3>Titre</h3><p>${a.titre}</p>
+  <h3>Description</h3><p>${a.description}</p>
+  ${a.actions_realisees ? `<h3>Actions réalisées</h3><p>${a.actions_realisees}</p>` : ''}
+  ${a.efficacite ? `<h3>Efficacité</h3><p>${a.efficacite === 'efficace' ? '✓ Efficace' : '✗ Inefficace'}</p>` : ''}
+  ${histRows ? `<h3>Historique</h3><table><thead><tr><th>Date</th><th>Action</th><th>Auteur</th></tr></thead><tbody>${histRows}</tbody></table>` : ''}
+  </body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 400);
+}
+
+function printActions(list: Action[]) {
+  const w = window.open('', '_blank');
+  if (!w) return;
+  const rows = list.map(a => {
+    const statutLabel = { ouverte: 'Ouverte', en_cours: 'En cours', cloturee: 'Clôturée', annulee: 'Annulée' }[a.statut] ?? a.statut;
+    return `<tr>
+      <td style="padding:4px 8px;border:1px solid #ddd">${a.code}</td>
+      <td style="padding:4px 8px;border:1px solid #ddd">${a.type}</td>
+      <td style="padding:4px 8px;border:1px solid #ddd">${a.titre}</td>
+      <td style="padding:4px 8px;border:1px solid #ddd">${statutLabel}</td>
+      <td style="padding:4px 8px;border:1px solid #ddd">${a.avancement}%</td>
+      <td style="padding:4px 8px;border:1px solid #ddd">${a.responsable}</td>
+      <td style="padding:4px 8px;border:1px solid #ddd">${a.echeance}</td>
+    </tr>`;
+  }).join('');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+  <title>Export Actions Correctives</title>
+  <style>body{font-family:Arial,sans-serif;font-size:11px;padding:20px;}
+  table{border-collapse:collapse;width:100%;}th{background:#1a56db;color:#fff;padding:5px 8px;border:1px solid #1a56db;}
+  tr:nth-child(even) td{background:#f9fafb;}</style>
+  </head><body>
+  <h2 style="color:#1a56db">Actions Correctives &amp; Préventives — ISO 21001 §10.2</h2>
+  <p style="color:#6b7280">SMART SMOE IFDL · ESEF Berrechid · Exporté le ${new Date().toLocaleDateString('fr-MA')}</p>
+  <table><thead><tr>
+    <th>Code</th><th>Type</th><th>Titre</th><th>Statut</th><th>Avanc.</th><th>Responsable</th><th>Échéance</th>
+  </tr></thead><tbody>${rows}</tbody></table>
+  </body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 400);
+}
 
 // ── Config ────────────────────────────────────────────────────
 const typeConfig: Record<string, { label: string; bg: string; border: string }> = {
@@ -138,6 +231,125 @@ const statutConfig: Record<string, { label: string; badge: string; dot: string }
   cloturee: { label: 'Clôturée',  badge: 'bg-green-100 text-green-700',  dot: 'bg-green-500' },
   annulee:  { label: 'Annulée',   badge: 'bg-red-100 text-red-700',      dot: 'bg-red-500' },
 };
+
+// ── Edit Action Modal ─────────────────────────────────────────
+function EditActionModal({
+  action,
+  onClose,
+  onSave,
+}: {
+  action: Action;
+  onClose: () => void;
+  onSave: (updated: Action) => void;
+}) {
+  const [titre,            setTitre]            = useState(action.titre);
+  const [description,      setDescription]      = useState(action.description);
+  const [type,             setType]             = useState(action.type);
+  const [statut,           setStatut]           = useState(action.statut);
+  const [avancement,       setAvancement]       = useState(action.avancement);
+  const [responsable,      setResponsable]      = useState(action.responsable);
+  const [echeance,         setEcheance]         = useState(action.echeance === '-' ? '' : action.echeance);
+  const [actions_realisees, setActionsRealisees] = useState(action.actions_realisees);
+  const [loading,          setLoading]          = useState(false);
+
+  const handleSave = async () => {
+    setLoading(true);
+    const dto = { titre, description, type, statut, avancement, responsable, echeance, actions_realisees };
+    try {
+      await api.patch(`/corrective-actions/${action.id}`, dto);
+    } catch {}
+    onSave({ ...action, ...dto });
+    setLoading(false);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-card border border-border rounded-xl p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-sm font-semibold">Modifier l'action — {action.code}</h3>
+            <p className="text-xs text-muted-foreground">ISO 21001 §10.2 · ESEF Berrechid</p>
+          </div>
+          <button onClick={onClose}><X className="h-4 w-4 text-muted-foreground" /></button>
+        </div>
+
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Titre</Label>
+            <Input value={titre} onChange={e => setTitre(e.target.value)} className="h-9 text-sm" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Type</Label>
+              <select value={type} onChange={e => setType(e.target.value)} className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+                <option value="corrective">Corrective</option>
+                <option value="preventive">Préventive</option>
+                <option value="amelioration">Amélioration</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Statut</Label>
+              <select value={statut} onChange={e => setStatut(e.target.value)} className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
+                <option value="ouverte">Ouverte</option>
+                <option value="en_cours">En cours</option>
+                <option value="cloturee">Clôturée</option>
+                <option value="annulee">Annulée</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Avancement (%)</Label>
+              <Input type="number" min={0} max={100} value={avancement} onChange={e => setAvancement(Number(e.target.value))} className="h-9 text-xs" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Échéance</Label>
+              <Input type="date" value={echeance} onChange={e => setEcheance(e.target.value)} className="h-9 text-xs" />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Responsable</Label>
+            <Input value={responsable} onChange={e => setResponsable(e.target.value)} className="h-9 text-xs" />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Description</Label>
+            <textarea
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              className="w-full h-20 rounded-lg border border-input bg-background text-sm px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Actions réalisées</Label>
+            <textarea
+              value={actions_realisees}
+              onChange={e => setActionsRealisees(e.target.value)}
+              className="w-full h-16 rounded-lg border border-input bg-background text-sm px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose} disabled={loading}>Annuler</Button>
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSave} disabled={loading}>
+              <Send className="h-3 w-3" /> {loading ? 'Enregistrement...' : 'Enregistrer'}
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 
 // ── Add Action Form Modal ─────────────────────────────────────
 function AddActionForm({ onClose, onAdd }: { onClose: () => void; onAdd: (a: any) => void }) {
@@ -165,10 +377,10 @@ function AddActionForm({ onClose, onAdd }: { onClose: () => void; onAdd: (a: any
         code: 'AC-' + Date.now().toString().slice(-6),
         echeance: echeance || null,
       });
-      onAdd(data);
+      onAdd(normalize(data));
       onClose();
     } catch {
-      setError('Erreur lors de l\'enregistrement. Vérifiez la connexion au serveur.');
+      setError("Erreur lors de l'enregistrement. Vérifiez la connexion au serveur.");
     } finally {
       setLoading(false);
     }
@@ -255,11 +467,13 @@ function ActionCard({
   isSelected,
   onSelect,
   onUpdate,
+  onEdit,
 }: {
-  action: typeof actions[0];
+  action: Action;
   isSelected: boolean;
   onSelect: () => void;
-  onUpdate: (updated: typeof actions[0]) => void;
+  onUpdate: (updated: Action) => void;
+  onEdit: (a: Action) => void;
 }) {
   const typeCfg   = typeConfig[action.type] ?? typeConfig.corrective;
   const statutCfg = statutConfig[action.statut] ?? statutConfig.ouverte;
@@ -269,7 +483,9 @@ function ActionCard({
     try {
       const { data } = await api.patch(`/corrective-actions/${action.id}`, { statut, avancement });
       onUpdate({ ...action, ...data, statut, avancement });
-    } catch {}
+    } catch {
+      onUpdate({ ...action, statut, avancement });
+    }
   };
 
   const avancementColor =
@@ -277,7 +493,7 @@ function ActionCard({
     action.avancement >= 40 ? 'bg-blue-500' :
     'bg-gray-400';
 
-  const isOverdue = action.statut !== 'cloturee' && new Date(action.echeance) < new Date();
+  const isOverdue = action.statut !== 'cloturee' && action.echeance !== '-' && new Date(action.echeance) < new Date();
 
   return (
     <motion.div layout initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}>
@@ -298,9 +514,11 @@ function ActionCard({
                 <span className={cn('text-[9px] font-semibold px-2 py-0.5 rounded border', typeCfg.bg, typeCfg.border)}>
                   {typeCfg.label}
                 </span>
-                <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
-                  {action.source}
-                </span>
+                {action.source && (
+                  <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
+                    {action.source}
+                  </span>
+                )}
                 {isOverdue && (
                   <span className="text-[9px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-semibold flex items-center gap-0.5">
                     <AlertCircle className="h-2.5 w-2.5" /> En retard
@@ -313,7 +531,9 @@ function ActionCard({
               {/* Meta */}
               <div className="flex items-center gap-3 mt-1.5 text-[10px] text-muted-foreground flex-wrap">
                 <span className="flex items-center gap-1"><User className="h-2.5 w-2.5" /> {action.responsable}</span>
-                <span className="flex items-center gap-1"><Calendar className="h-2.5 w-2.5" /> {new Date(action.echeance).toLocaleDateString('fr-MA')}</span>
+                {action.echeance !== '-' && (
+                  <span className="flex items-center gap-1"><Calendar className="h-2.5 w-2.5" /> {new Date(action.echeance).toLocaleDateString('fr-MA')}</span>
+                )}
               </div>
 
               {/* Progress */}
@@ -386,43 +606,50 @@ function ActionCard({
                 <Separator />
 
                 {/* Historique */}
-                <div>
-                  <p className="text-xs font-semibold mb-2 flex items-center gap-1">
-                    <History className="h-3 w-3" /> Historique
-                  </p>
-                  <div className="space-y-2">
-                    {action.historique.map((h, i) => (
-                      <div key={i} className="flex gap-2 text-xs">
-                        <div className="flex flex-col items-center">
-                          <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-0.5" />
-                          {i < action.historique.length - 1 && (
-                            <div className="w-px flex-1 bg-border mt-1" />
-                          )}
+                {action.historique.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold mb-2 flex items-center gap-1">
+                      <History className="h-3 w-3" /> Historique
+                    </p>
+                    <div className="space-y-2">
+                      {action.historique.map((h, i) => (
+                        <div key={i} className="flex gap-2 text-xs">
+                          <div className="flex flex-col items-center">
+                            <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-0.5" />
+                            {i < action.historique.length - 1 && (
+                              <div className="w-px flex-1 bg-border mt-1" />
+                            )}
+                          </div>
+                          <div className="pb-2">
+                            <p className="font-medium">{h.action}</p>
+                            <p className="text-muted-foreground text-[10px]">
+                              {h.auteur} · {new Date(h.date).toLocaleDateString('fr-MA')}
+                            </p>
+                          </div>
                         </div>
-                        <div className="pb-2">
-                          <p className="font-medium">{h.action}</p>
-                          <p className="text-muted-foreground text-[10px]">
-                            {h.auteur} · {new Date(h.date).toLocaleDateString('fr-MA')}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Action buttons */}
                 <div className="flex gap-2 pt-1">
                   {action.statut === 'ouverte' && (
-                    <Button size="sm" className="text-xs gap-1 h-7" onClick={() => changeStatut('en_cours')}>
+                    <Button size="sm" className="text-xs gap-1 h-7" onClick={e => { e.stopPropagation(); changeStatut('en_cours'); }}>
                       <TrendingUp className="h-3 w-3" /> Démarrer
                     </Button>
                   )}
                   {action.statut === 'en_cours' && (
-                    <Button size="sm" className="text-xs gap-1 h-7" onClick={() => changeStatut('cloturee')}>
+                    <Button size="sm" className="text-xs gap-1 h-7" onClick={e => { e.stopPropagation(); changeStatut('cloturee'); }}>
                       <CheckCircle2 className="h-3 w-3" /> Clôturer
                     </Button>
                   )}
-                  <Button size="sm" variant="outline" className="text-xs gap-1 h-7">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs gap-1 h-7"
+                    onClick={e => { e.stopPropagation(); onEdit(action); }}
+                  >
                     <FileText className="h-3 w-3" /> Modifier
                   </Button>
                 </div>
@@ -437,15 +664,31 @@ function ActionCard({
 
 // ── Main Page ─────────────────────────────────────────────────
 export default function ActionsPage() {
-  const [actionList, setActionList] = useState(actions);
+  const [actionList, setActionList] = useState<Action[]>(actions);
+  const [editAction, setEditAction] = useState<Action | null>(null);
+
   useEffect(() => {
-    api.get('/corrective-actions').then(r => { if (Array.isArray(r.data) && r.data.length) setActionList(r.data); }).catch(() => {});
+    api.get('/corrective-actions').then(r => {
+      if (Array.isArray(r.data) && r.data.length) {
+        const normalized = r.data.map(normalize);
+        setActionList(prev => {
+          const existingCodes = new Set(prev.map(a => a.code));
+          const newOnes = normalized.filter((a: Action) => !existingCodes.has(a.code));
+          return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
+        });
+      }
+    }).catch(() => {});
   }, []);
+
   const [search,   setSearch]   = useState('');
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
 
-  const handleAdd = (a: any) => setActionList(prev => [a, ...prev]);
+  const handleAdd = (a: any) => setActionList(prev => [normalize(a), ...prev]);
+
+  const handleSaveAction = (updated: Action) => {
+    setActionList(prev => prev.map(a => a.id === updated.id ? updated : a));
+  };
 
   const stats = {
     total:     actionList.length,
@@ -464,13 +707,13 @@ export default function ActionsPage() {
   const filterActions = (tab: string) =>
     actionList.filter(a => {
       const matchSearch =
-        a.titre.toLowerCase().includes(search.toLowerCase()) ||
-        a.code.toLowerCase().includes(search.toLowerCase()) ||
+        (a.titre ?? '').toLowerCase().includes(search.toLowerCase()) ||
+        (a.code  ?? '').toLowerCase().includes(search.toLowerCase()) ||
         (a.source ?? '').toLowerCase().includes(search.toLowerCase());
       if (!matchSearch) return false;
-      if (tab === 'toutes')   return true;
-      if (tab === 'ouvertes') return a.statut === 'ouverte';
-      if (tab === 'en_cours') return a.statut === 'en_cours';
+      if (tab === 'toutes')    return true;
+      if (tab === 'ouvertes')  return a.statut === 'ouverte';
+      if (tab === 'en_cours')  return a.statut === 'en_cours';
       if (tab === 'cloturees') return a.statut === 'cloturee';
       return true;
     });
@@ -494,7 +737,7 @@ export default function ActionsPage() {
             variant="outline"
             size="sm"
             className="text-xs gap-1"
-            onClick={() => downloadExport('corrective-actions', 'xlsx', 'actions-correctives.xlsx')}
+            onClick={() => printActions(filterActions('toutes'))}
           >
             <Download className="h-3.5 w-3.5" /> Export
           </Button>
@@ -538,7 +781,7 @@ export default function ActionsPage() {
 
       <Tabs defaultValue="toutes">
         <TabsList className="h-9">
-          <TabsTrigger value="toutes"    className="text-xs">Toutes ({actions.length})</TabsTrigger>
+          <TabsTrigger value="toutes"    className="text-xs">Toutes ({actionList.length})</TabsTrigger>
           <TabsTrigger value="ouvertes"  className="text-xs">Ouvertes ({stats.ouvertes})</TabsTrigger>
           <TabsTrigger value="en_cours"  className="text-xs">En cours ({stats.en_cours})</TabsTrigger>
           <TabsTrigger value="cloturees" className="text-xs">Clôturées ({stats.cloturees})</TabsTrigger>
@@ -561,6 +804,7 @@ export default function ActionsPage() {
                   isSelected={selected === action.id}
                   onSelect={() => setSelected(selected === action.id ? null : action.id)}
                   onUpdate={updated => setActionList(prev => prev.map(a => a.id === updated.id ? updated : a))}
+                  onEdit={setEditAction}
                 />
               ))
             )}
@@ -571,6 +815,17 @@ export default function ActionsPage() {
       {/* Add form modal */}
       <AnimatePresence>
         {showForm && <AddActionForm onClose={() => setShowForm(false)} onAdd={handleAdd} />}
+      </AnimatePresence>
+
+      {/* Edit modal */}
+      <AnimatePresence>
+        {editAction && (
+          <EditActionModal
+            action={editAction}
+            onClose={() => setEditAction(null)}
+            onSave={updated => { handleSaveAction(updated); setEditAction(null); }}
+          />
+        )}
       </AnimatePresence>
     </div>
   );
