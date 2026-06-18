@@ -5,8 +5,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { downloadExport } from '@/lib/export';
 import api from '@/lib/api';
+import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileX, Plus, Search, Filter, Calendar, User,
@@ -126,6 +126,204 @@ const tabFilters: Record<string, string[]> = {
   en_traitement: ['en_traitement'],
   cloturees:     ['cloturee', 'verifiee'],
 };
+
+// ── Print helpers ─────────────────────────────────────────────
+type Finding = typeof findings[0];
+
+function printFinding(f: Finding) {
+  const tc = typeConfig[f.type] ?? typeConfig.observation;
+  const sc = statutConfig[f.statut] ?? statutConfig.ouverte;
+  const date = new Date().toLocaleDateString('fr-MA', { day: '2-digit', month: 'long', year: 'numeric' });
+  const histRows = f.historique.map((h, i) => `
+    <tr>
+      <td style="padding:6px 10px;font-size:11px;color:#6b7280">${new Date(h.date).toLocaleDateString('fr-MA')}</td>
+      <td style="padding:6px 10px;font-size:12px">${h.action}</td>
+      <td style="padding:6px 10px;font-size:11px;color:#6b7280">${h.auteur}</td>
+    </tr>`).join('');
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Fiche Constat — ${f.code}</title>
+  <style>
+    body{font-family:Arial,sans-serif;color:#111;margin:40px}
+    h1{font-size:18px;color:#dc2626;margin-bottom:2px}
+    h2{font-size:12px;color:#6b7280;font-weight:normal;margin-top:2px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+    .field{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px}
+    .fl{font-size:10px;font-weight:700;text-transform:uppercase;color:#6b7280;letter-spacing:.05em}
+    .fv{font-size:13px;font-weight:600;margin-top:2px}
+    .desc{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px;margin:12px 0;font-size:13px;line-height:1.6}
+    table{width:100%;border-collapse:collapse;margin-top:6px}
+    th{background:#f3f4f6;padding:6px 10px;font-size:11px;text-align:left}
+    tr:nth-child(even) td{background:#fafafa}
+    @media print{@page{margin:20mm}}
+  </style></head><body>
+  <h1>${f.code} — ${tc.label}</h1>
+  <h2>SMART SMOE IFDL · ISO 21001 §${f.clause} · Généré le ${date}</h2>
+  <div class="desc">${f.description}</div>
+  <div class="grid">
+    <div class="field"><div class="fl">Type</div><div class="fv">${tc.label}</div></div>
+    <div class="field"><div class="fl">Statut</div><div class="fv">${sc.label}</div></div>
+    <div class="field"><div class="fl">Clause ISO</div><div class="fv">§${f.clause}</div></div>
+    <div class="field"><div class="fl">Audit source</div><div class="fv">${f.audit}</div></div>
+    <div class="field"><div class="fl">Processus</div><div class="fv">${f.process}</div></div>
+    <div class="field"><div class="fl">Responsable</div><div class="fv">${f.responsable}</div></div>
+    <div class="field"><div class="fl">Date constat</div><div class="fv">${new Date(f.date_constat).toLocaleDateString('fr-MA')}</div></div>
+    <div class="field"><div class="fl">Échéance</div><div class="fv">${f.echeance === '-' ? '—' : new Date(f.echeance).toLocaleDateString('fr-MA')}</div></div>
+  </div>
+  <p style="font-size:12px;font-weight:700;margin-top:16px">Historique du traitement</p>
+  <table><thead><tr><th>Date</th><th>Action</th><th>Auteur</th></tr></thead><tbody>${histRows}</tbody></table>
+  </body></html>`;
+  const w = window.open('', '_blank', 'width=850,height=700');
+  if (!w) return;
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(() => { w.print(); }, 400);
+}
+
+function printFindings(list: Finding[]) {
+  const date = new Date().toLocaleDateString('fr-MA', { day: '2-digit', month: 'long', year: 'numeric' });
+  const rows = list.map(f => {
+    const tc = typeConfig[f.type] ?? typeConfig.observation;
+    const sc = statutConfig[f.statut] ?? statutConfig.ouverte;
+    return `<tr>
+      <td style="padding:7px 10px;font-size:11px;font-weight:700;color:#dc2626">${f.code}</td>
+      <td style="padding:7px 10px;font-size:11px">${tc.label}</td>
+      <td style="padding:7px 10px;font-size:12px;max-width:300px">${f.description.slice(0, 80)}${f.description.length > 80 ? '…' : ''}</td>
+      <td style="padding:7px 10px;font-size:11px;color:#1d4ed8">§${f.clause}</td>
+      <td style="padding:7px 10px;font-size:11px">${f.process}</td>
+      <td style="padding:7px 10px;font-size:11px;color:${f.statut === 'cloturee' ? '#16a34a' : f.statut === 'en_traitement' ? '#d97706' : '#dc2626'}">${sc.label}</td>
+      <td style="padding:7px 10px;font-size:11px;text-align:center">${f.avancement}%</td>
+    </tr>`;
+  }).join('');
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Non-conformités & Constats SMOE</title>
+  <style>
+    body{font-family:Arial,sans-serif;color:#111;margin:30px}
+    h1{font-size:18px;color:#dc2626;margin-bottom:2px}
+    h2{font-size:12px;color:#6b7280;font-weight:normal;margin-top:2px}
+    table{width:100%;border-collapse:collapse;margin-top:16px}
+    th{background:#dc2626;color:white;padding:7px 10px;font-size:10px;text-align:left}
+    tr:nth-child(even) td{background:#fafafa}
+    @media print{@page{margin:15mm;size:landscape}}
+  </style></head><body>
+  <h1>Non-conformités &amp; Constats — SMOE IFDL</h1>
+  <h2>ISO 21001 §10.2 · ESEF Berrechid · Généré le ${date} · ${list.length} constat(s)</h2>
+  <table><thead><tr><th>Code</th><th>Type</th><th>Description</th><th>Clause</th><th>Processus</th><th>Statut</th><th style="text-align:center">Avancement</th></tr></thead>
+  <tbody>${rows}</tbody></table>
+  </body></html>`;
+  const w = window.open('', '_blank', 'width=1100,height=700');
+  if (!w) return;
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  setTimeout(() => { w.print(); }, 400);
+}
+
+// ── Edit Finding Modal ─────────────────────────────────────────
+function EditFindingModal({ finding, onClose, onSave }: { finding: Finding; onClose: () => void; onSave: (updated: Finding) => void }) {
+  const [form, setForm] = useState({
+    description: finding.description,
+    type:        finding.type,
+    clause:      finding.clause,
+    responsable: finding.responsable,
+    echeance:    finding.echeance === '-' ? '' : finding.echeance,
+    avancement:  finding.avancement,
+    statut:      finding.statut,
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const set = (k: keyof typeof form, v: string | number) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleSave = async () => {
+    if (!form.description.trim() || !form.clause.trim()) { setError('Description et clause sont requises.'); return; }
+    setLoading(true); setError('');
+    try {
+      await api.patch(`/findings/${finding.id}`, form).catch(() => {});
+      const updated = { ...finding, ...form, echeance: form.echeance || '-' };
+      onSave(updated as Finding);
+      toast.success('Constat modifié');
+      onClose();
+    } catch {
+      setError('Erreur lors de la modification.');
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-card border border-border rounded-xl p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-sm font-semibold">Modifier le constat</h3>
+            <p className="text-[10px] font-mono text-muted-foreground">{finding.code}</p>
+          </div>
+          <button onClick={onClose}><X className="h-4 w-4 text-muted-foreground" /></button>
+        </div>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Type *</Label>
+              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3" value={form.type} onChange={e => set('type', e.target.value)}>
+                <option value="nc_majeure">NC Majeure</option>
+                <option value="nc_mineure">NC Mineure</option>
+                <option value="observation">Observation</option>
+                <option value="point_fort">Point fort</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Clause ISO *</Label>
+              <Input className="h-9 text-sm" value={form.clause} onChange={e => set('clause', e.target.value)} placeholder="ex. 7.5.3" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs font-medium">Description *</Label>
+            <textarea
+              className="w-full h-20 rounded-lg border border-input bg-background text-sm px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+              value={form.description}
+              onChange={e => set('description', e.target.value)}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Statut</Label>
+              <select className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3" value={form.statut} onChange={e => set('statut', e.target.value)}>
+                <option value="ouverte">Ouverte</option>
+                <option value="en_traitement">En traitement</option>
+                <option value="cloturee">Clôturée</option>
+                <option value="verifiee">Vérifiée</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Avancement (%)</Label>
+              <Input type="number" min={0} max={100} className="h-9 text-sm" value={form.avancement} onChange={e => set('avancement', Number(e.target.value))} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Responsable</Label>
+              <Input className="h-9 text-sm" value={form.responsable} onChange={e => set('responsable', e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Échéance</Label>
+              <Input type="date" className="h-9 text-sm" value={form.echeance} onChange={e => set('echeance', e.target.value)} />
+            </div>
+          </div>
+          {error && <p className="text-xs text-red-600">{error}</p>}
+          <div className="flex gap-2 pt-1">
+            <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={onClose}>Annuler</Button>
+            <Button size="sm" className="flex-1 h-8 text-xs gap-1" onClick={handleSave} disabled={loading}>
+              {loading ? 'Enregistrement...' : 'Enregistrer'}
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 
 // ── Add Finding Form (Modal) ───────────────────────────────────
 function AddFindingForm({ onClose, onAdd }: { onClose: () => void; onAdd: (f: any) => void }) {
@@ -257,10 +455,15 @@ export default function FindingsPage() {
   const [selected, setSelected]   = useState<typeof findings[0] | null>(null);
   const [expanded, setExpanded]   = useState<number | null>(null);
   const [findingList, setFindingList] = useState(findings);
+  const [editFinding, setEditFinding] = useState<Finding | null>(null);
   useEffect(() => {
     api.get('/findings').then(r => { if (Array.isArray(r.data) && r.data.length) setFindingList(r.data); }).catch(() => {});
   }, []);
   const handleAdd = (f: any) => setFindingList(prev => [f, ...prev]);
+  const handleSaveFinding = (updated: Finding) => {
+    setFindingList(prev => prev.map(f => f.id === updated.id ? updated : f));
+    setSelected(prev => prev?.id === updated.id ? updated : prev);
+  };
   const updateFinding = async (id: number, patch: Record<string, any>) => {
     try {
       const { data } = await api.patch(`/findings/${id}`, patch);
@@ -310,9 +513,9 @@ export default function FindingsPage() {
             variant="outline"
             size="sm"
             className="text-xs gap-1"
-            onClick={() => downloadExport('findings', 'xlsx', 'constats.xlsx')}
+            onClick={() => printFindings(filtered)}
           >
-            <Download className="h-3.5 w-3.5" /> Export
+            <Download className="h-3.5 w-3.5" /> Export PDF
           </Button>
           <Button size="sm" className="text-xs gap-1" onClick={() => setShowForm(true)}>
             <Plus className="h-3.5 w-3.5" /> Nouveau constat
@@ -477,7 +680,7 @@ export default function FindingsPage() {
                                     ))}
                                   </div>
                                   <div className="flex gap-2 pt-1">
-                                    <Button size="sm" variant="outline" className="text-xs gap-1 h-7">
+                                    <Button size="sm" variant="outline" className="text-xs gap-1 h-7" onClick={e => { e.stopPropagation(); setEditFinding(f); }}>
                                       <Edit2 className="h-3 w-3" /> Modifier
                                     </Button>
                                     {f.statut === 'ouverte' && (
@@ -595,7 +798,7 @@ export default function FindingsPage() {
                                 <CheckCircle2 className="h-3 w-3" /> Clôturer
                               </Button>
                             )}
-                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1 px-2">
+                            <Button size="sm" variant="outline" className="h-7 text-xs gap-1 px-2" onClick={() => printFinding(selected)} title="Télécharger fiche PDF">
                               <Eye className="h-3 w-3" />
                             </Button>
                           </div>
@@ -622,6 +825,13 @@ export default function FindingsPage() {
 
       <AnimatePresence>
         {showForm && <AddFindingForm onClose={() => setShowForm(false)} onAdd={handleAdd} />}
+        {editFinding && (
+          <EditFindingModal
+            finding={editFinding}
+            onClose={() => setEditFinding(null)}
+            onSave={handleSaveFinding}
+          />
+        )}
       </AnimatePresence>
     </div>
   );
