@@ -29,9 +29,9 @@ export class UsersService {
   }
 
   async update(id: string, dto: Partial<User>): Promise<User> {
-    const user = await this.findOne(id);
-    Object.assign(user, dto);
-    return this.userRepo.save(user);
+    await this.findOne(id);
+    await this.userRepo.update(id, dto);
+    return this.findOne(id);
   }
 
   async remove(id: string): Promise<void> {
