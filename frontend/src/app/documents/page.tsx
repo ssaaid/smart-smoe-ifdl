@@ -583,7 +583,7 @@ export default function DocumentsPage() {
   const [editDoc, setEditDoc] = useState<Doc | null>(null);
 
   const handleAdd = (newDoc: NewDoc) => {
-    setDocs(prev => [...prev, { id: prev.length + 1, ...newDoc, statut: 'brouillon', date_approbation: null, date_revision: null, file_url: '#' }]);
+    setDocs(prev => [...prev, { id: prev.length + 1, ...newDoc, statut: 'brouillon', date_approbation: '', date_revision: '', file_url: '#' }]);
   };
 
   const handleSave = (updated: Doc) => {
