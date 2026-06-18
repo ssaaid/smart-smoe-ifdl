@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   FolderOpen, Plus, Search, Filter, Eye, Download, Edit2,
   X, FileText, AlertTriangle, CheckCircle2, Clock, Upload,
-  BookOpen, Settings, ClipboardList, FileCheck, BarChart2,
+  BookOpen, Settings, ClipboardList, FileCheck, BarChart2, GitBranch,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,22 +23,52 @@ import toast from 'react-hot-toast';
 
 // ── Mock data ──────────────────────────────────────────────────────────────
 const documents = [
-  { id: 1,  reference: 'PR-QUA-001',  titre: 'Manuel Qualité SMOE IFDL',                type: 'procedure',    version: '3.2', statut: 'approuve',   process: 'PR-01', auteur: 'Resp. Qualité',  date_approbation: '2025-09-01',  date_revision: '2026-09-01',  file_url: '#' },
-  { id: 2,  reference: 'PR-PED-001',  titre: 'Procédure Conception Pédagogique',         type: 'procedure',    version: '2.1', statut: 'approuve',   process: 'PR-02', auteur: 'Coord. Pédago', date_approbation: '2025-11-15',  date_revision: '2026-11-15',  file_url: '#' },
-  { id: 3,  reference: 'IN-EVA-001',  titre: 'Instruction Évaluation des Étudiants',     type: 'instruction',  version: '1.3', statut: 'approuve',   process: 'PR-02', auteur: 'Coord. Pédago', date_approbation: '2026-01-10',  date_revision: '2027-01-10',  file_url: '#' },
-  { id: 4,  reference: 'FM-SAT-001',  titre: 'Formulaire Enquête Satisfaction Étudiant', type: 'formulaire',   version: '2.0', statut: 'approuve',   process: 'PR-04', auteur: 'Resp. Qualité',  date_approbation: '2025-12-01',  date_revision: '2026-12-01',  file_url: '#' },
-  { id: 5,  reference: 'CH-QUA-001',  titre: 'Charte Qualité ESEF Berrechid',            type: 'charte',       version: '1.0', statut: 'approuve',   process: 'PR-01', auteur: 'Direction',     date_approbation: '2024-09-01',  date_revision: '2026-09-01',  file_url: '#' },
-  { id: 6,  reference: 'PR-DOC-001',  titre: 'Procédure Maîtrise des Documents',         type: 'procedure',    version: '1.0', statut: 'en_revision', process: 'PR-03', auteur: 'Resp. Qualité',  date_approbation: null,           date_revision: null,           file_url: '#' },
-  { id: 7,  reference: 'RP-AUD-2026', titre: 'Rapport Audit Interne PR-01 Mars 2026',    type: 'rapport',      version: '1.0', statut: 'approuve',   process: 'PR-04', auteur: 'Pr. Benali',    date_approbation: '2026-03-15',  date_revision: null,           file_url: '#' },
-  { id: 8,  reference: 'IN-SUP-001',  titre: 'Instruction Gestion Infrastructures',      type: 'instruction',  version: '2.0', statut: 'approuve',   process: 'PR-03', auteur: 'Resp. Admin',   date_approbation: '2025-06-01',  date_revision: '2026-06-01',  file_url: '#' },
-  { id: 9,  reference: 'FM-NC-001',   titre: 'Formulaire Déclaration Non-Conformité',    type: 'formulaire',   version: '1.1', statut: 'approuve',   process: 'PR-04', auteur: 'Resp. Qualité',  date_approbation: '2025-10-01',  date_revision: '2026-10-01',  file_url: '#' },
-  { id: 10, reference: 'PR-AUD-001',  titre: 'Procédure Audit Interne ISO 21001',        type: 'procedure',    version: '1.0', statut: 'brouillon',  process: 'PR-04', auteur: 'Coord. Qualité', date_approbation: null,           date_revision: null,           file_url: '#' },
+  { id: 1,  reference: 'FP-PR01-INDEX', titre: 'Fiche Processus Pilotage — Index et Cartographie',             type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-01', auteur: 'Pr. ARAICHI Rachid',  date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 2,  reference: 'FP-PR01-1',     titre: 'Définition de la politique qualité',                           type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-01', auteur: 'Resp. Qualité SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 3,  reference: 'FP-PR01-2',     titre: 'Planification stratégique',                                    type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-01', auteur: 'Resp. Qualité SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 4,  reference: 'FP-PR01-3',     titre: 'Pilotage par les indicateurs de performance (KPI)',            type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-01', auteur: 'Resp. Qualité SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 5,  reference: 'FP-PR01-4',     titre: 'Gestion des risques et opportunités',                          type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-01', auteur: 'Resp. Qualité SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 6,  reference: 'FP-PR01-5',     titre: 'Revue de direction du SMOE',                                   type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-01', auteur: 'Pr. ARAICHI Rachid',  date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 7,  reference: 'FP-PR01-6',     titre: 'Amélioration continue du SMOE',                                type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-01', auteur: 'Resp. Qualité SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 8,  reference: 'FP-PR02-INDEX', titre: 'Fiche Processus Réalisation Pédagogique — Index',              type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-02', auteur: 'Pr. Soumiya TAMANI', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 9,  reference: 'FP-PR02-1',     titre: 'Admission et sélection des étudiants',                         type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-02', auteur: 'Pr. Soumiya TAMANI', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 10, reference: 'FP-PR02-2',     titre: 'Conception pédagogique',                                       type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-02', auteur: 'Pr. Soumiya TAMANI', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 11, reference: 'FP-PR02-3',     titre: "Mise en oeuvre des activites d'enseignement",                  type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-02', auteur: 'Pr. Soumiya TAMANI', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 12, reference: 'FP-PR02-4',     titre: 'Evaluation des apprentissages',                                 type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-02', auteur: 'Pr. Soumiya TAMANI', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 13, reference: 'FP-PR02-5',     titre: 'Soutenance, deliberation et diplomation',                      type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-02', auteur: 'Pr. Soumiya TAMANI', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 14, reference: 'FP-PR02-6',     titre: 'Suivi pedagogique des etudiants',                              type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-02', auteur: 'Pr. Soumiya TAMANI', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 15, reference: 'FP-PR02-7',     titre: "Gestion des stages et projets de fin d'etudes",                type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-02', auteur: 'Pr. Soumiya TAMANI', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 16, reference: 'FP-PR02-8',     titre: 'Suivi des laureats du Master IFDL',                            type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-02', auteur: 'Pr. Soumiya TAMANI', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 17, reference: 'FP-PR03-INDEX', titre: 'Fiche Processus Support et Ressources — Index',                type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-03', auteur: 'Secr. General ESEF', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 18, reference: 'FP-PR03-1',     titre: 'Gestion administrative et scolarite',                          type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-03', auteur: 'Secr. General ESEF', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 19, reference: 'FP-PR03-2',     titre: "Systemes d'information et digital learning",                   type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-03', auteur: 'Secr. General ESEF', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 20, reference: 'FP-PR03-3',     titre: 'Gestion des ressources humaines',                              type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-03', auteur: 'Secr. General ESEF', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 21, reference: 'FP-PR03-4',     titre: 'Gestion logistique et infrastructures',                        type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-03', auteur: 'Secr. General ESEF', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 22, reference: 'FP-PR03-5',     titre: 'Gestion financiere',                                           type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-03', auteur: 'Secr. General ESEF', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 23, reference: 'FP-PR04-INDEX', titre: 'Fiche Processus Evaluation et Amelioration — Index',           type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-04', auteur: 'Resp. Qualite SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 24, reference: 'FP-PR04-1',     titre: 'Audit interne du SMOE',                                        type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-04', auteur: 'Resp. Qualite SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 25, reference: 'FP-PR04-2',     titre: 'Gestion des non-conformites',                                  type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-04', auteur: 'Resp. Qualite SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 26, reference: 'FP-PR04-3',     titre: 'Actions correctives et amelioration',                          type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-04', auteur: 'Resp. Qualite SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 27, reference: 'FP-PR04-4',     titre: 'Revue de direction SMOE',                                      type: 'fiche_processus', version: '1.0', statut: 'approuve',   process: 'PR-04', auteur: 'Resp. Qualite SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 28, reference: 'PRO-SMOE-01',   titre: 'Procedure Qualite — Gestion documentaire',                     type: 'procedure',       version: '1.0', statut: 'approuve',   process: 'PR-03', auteur: 'Resp. Qualite SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 29, reference: 'PRO-SMOE-02',   titre: 'Procedure Qualite — Gestion des enregistrements',              type: 'procedure',       version: '1.0', statut: 'approuve',   process: 'PR-03', auteur: 'Resp. Qualite SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 30, reference: 'PRO-SMOE-03',   titre: 'Procedure Qualite — Audit interne',                            type: 'procedure',       version: '1.0', statut: 'approuve',   process: 'PR-04', auteur: 'Resp. Qualite SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 31, reference: 'PRO-SMOE-04',   titre: 'Procedure Qualite — Gestion des non-conformites',              type: 'procedure',       version: '1.0', statut: 'approuve',   process: 'PR-04', auteur: 'Resp. Qualite SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 32, reference: 'PRO-SMOE-05',   titre: 'Procedure Qualite — Actions correctives',                      type: 'procedure',       version: '1.0', statut: 'approuve',   process: 'PR-04', auteur: 'Resp. Qualite SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 33, reference: 'PRO-SMOE-06',   titre: 'Procedure Qualite — Revue de direction',                       type: 'procedure',       version: '1.0', statut: 'approuve',   process: 'PR-01', auteur: 'Resp. Qualite SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 34, reference: 'PS-SMOE-01',    titre: 'Procedure Systeme — Gestion des reclamations et appels',       type: 'instruction',     version: '1.0', statut: 'approuve',   process: 'PR-04', auteur: 'Resp. Qualite SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 35, reference: 'PS-SMOE-02',    titre: "Procedure Systeme — Maitrise de l'information documentee",     type: 'instruction',     version: '1.0', statut: 'approuve',   process: 'PR-03', auteur: 'Resp. Qualite SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 36, reference: 'PS-SMOE-03',    titre: 'Procedure Systeme — Satisfaction des parties interessees',     type: 'instruction',     version: '1.0', statut: 'approuve',   process: 'PR-04', auteur: 'Resp. Qualite SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 37, reference: 'PS-SMOE-04',    titre: 'Procedure Systeme — Communication interne et externe',         type: 'instruction',     version: '1.0', statut: 'approuve',   process: 'PR-01', auteur: 'Resp. Qualite SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 38, reference: 'PS-SMOE-05',    titre: 'Procedure Systeme — Gestion des competences SMOE',             type: 'instruction',     version: '1.0', statut: 'approuve',   process: 'PR-03', auteur: 'Resp. Qualite SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
+  { id: 39, reference: 'GR-SMOE-01',    titre: 'Guide de referencement SMOE IFDL',                             type: 'charte',          version: '1.0', statut: 'approuve',   process: 'PR-01', auteur: 'Resp. Qualite SMOE', date_approbation: '2024-09-01', date_revision: '2026-09-01', file_url: '#' },
 ];
 
 type Doc = typeof documents[0];
 
 // ── Type configuration ────────────────────────────────────────────────────
 const typeConfig: Record<string, { label: string; icon: React.ReactNode; badge: string; pill: string }> = {
+  fiche_processus: { label: 'Fiche Processus', icon: <GitBranch className="h-3 w-3" />, badge: 'bg-teal-100 text-teal-700 border-teal-200', pill: 'bg-teal-100 text-teal-700' },
   procedure:   { label: 'Procédure',   icon: <BookOpen className="h-3 w-3" />,      badge: 'bg-blue-100 text-blue-700 border-blue-200',       pill: 'bg-blue-100 text-blue-700' },
   instruction: { label: 'Instruction', icon: <Settings className="h-3 w-3" />,      badge: 'bg-purple-100 text-purple-700 border-purple-200', pill: 'bg-purple-100 text-purple-700' },
   formulaire:  { label: 'Formulaire',  icon: <ClipboardList className="h-3 w-3" />, badge: 'bg-green-100 text-green-700 border-green-200',    pill: 'bg-green-100 text-green-700' },
@@ -241,6 +271,7 @@ function UploadModal({ onClose, onAdd }: { onClose: () => void; onAdd: (doc: New
               <Label className="text-xs font-medium">Type *</Label>
               <select value={form.type} onChange={e => set('type', e.target.value)} className="w-full h-9 rounded-lg border border-input bg-background text-xs px-3">
                 <option value="">Sélectionner...</option>
+                <option value="fiche_processus">Fiche Processus</option>
                 <option value="procedure">Procédure</option>
                 <option value="instruction">Instruction</option>
                 <option value="formulaire">Formulaire</option>
@@ -672,6 +703,7 @@ export default function DocumentsPage() {
         </div>
         <select className="h-8 rounded-lg border border-input bg-background text-xs px-3 min-w-[140px]" value={filterType} onChange={e => setFilterType(e.target.value)}>
           <option value="tous">Tous les types</option>
+          <option value="fiche_processus">Fiche Processus</option>
           <option value="procedure">Procédure</option>
           <option value="instruction">Instruction</option>
           <option value="formulaire">Formulaire</option>
