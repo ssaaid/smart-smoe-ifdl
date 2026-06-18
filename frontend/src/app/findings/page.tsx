@@ -456,8 +456,32 @@ export default function FindingsPage() {
   const [expanded, setExpanded]   = useState<number | null>(null);
   const [findingList, setFindingList] = useState(findings);
   const [editFinding, setEditFinding] = useState<Finding | null>(null);
+
   useEffect(() => {
-    api.get('/findings').then(r => { if (Array.isArray(r.data) && r.data.length) setFindingList(r.data); }).catch(() => {});
+    api.get('/findings').then(r => {
+      if (!Array.isArray(r.data) || !r.data.length) return;
+      const normalize = (f: any): Finding => ({
+        id:           f.id,
+        code:         f.code ?? '',
+        type:         f.type ?? 'observation',
+        description:  f.description ?? '',
+        clause:       f.clause ?? '',
+        audit:        f.audit ?? f.audit_id ?? '',
+        process:      f.process ?? '',
+        responsable:  f.responsable ?? '-',
+        statut:       f.statut ?? 'ouverte',
+        echeance:     f.echeance ? String(f.echeance).slice(0, 10) : '-',
+        avancement:   f.avancement ?? 0,
+        date_constat: f.date_constat ?? f.created_at?.slice(0, 10) ?? '',
+        historique:   Array.isArray(f.historique) ? f.historique : [],
+      });
+      const normalized = r.data.map(normalize);
+      setFindingList(prev => {
+        const existingCodes = new Set(prev.map(f => f.code));
+        const newOnes = normalized.filter((f: Finding) => !existingCodes.has(f.code));
+        return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
+      });
+    }).catch(() => {});
   }, []);
   const handleAdd = (f: any) => setFindingList(prev => [f, ...prev]);
   const handleSaveFinding = (updated: Finding) => {
@@ -490,7 +514,7 @@ export default function FindingsPage() {
     const matchSearch  =
       f.description.toLowerCase().includes(search.toLowerCase()) ||
       f.code.toLowerCase().includes(search.toLowerCase()) ||
-      f.clause.toLowerCase().includes(search.toLowerCase());
+      (f.clause ?? '').toLowerCase().includes(search.toLowerCase());
     return matchStatut && matchSearch;
   });
 
