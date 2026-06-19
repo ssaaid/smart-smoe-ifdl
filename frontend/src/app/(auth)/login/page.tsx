@@ -96,7 +96,7 @@ export default function LoginPage() {
           <div>
             <div className="flex items-center gap-3 mb-8">
               <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/25">
-                <Image src="/logo-esef.jpg" alt="ESEF Logo" width={48} height={48} className="object-contain w-full h-full" />
+                <Image src="/logo.jpeg" alt="ESEF Logo" width={48} height={48} className="object-cover w-full h-full" />
               </div>
               <div>
                 <h1 className="text-white font-bold text-xl leading-tight">SMART SMOE IFDL</h1>
@@ -165,7 +165,7 @@ export default function LoginPage() {
           {/* Mobile logo */}
           <div className="flex items-center gap-3 lg:hidden">
             <div className="w-10 h-10 rounded-xl overflow-hidden">
-              <Image src="/logo-esef.jpg" alt="ESEF Logo" width={40} height={40} className="object-contain w-full h-full" />
+              <Image src="/logo.jpeg" alt="ESEF Logo" width={40} height={40} className="object-cover w-full h-full" />
             </div>
             <div>
               <h1 className="font-bold text-lg leading-tight">SMART SMOE IFDL</h1>
