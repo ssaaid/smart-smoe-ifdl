@@ -1,6 +1,6 @@
 /**
  * Plan de Formation & Compétences — ISO 21001 clause 7.2
- * SMART SMOE IFDL · ESEF Berrechid · Master IFDL
+ * SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid · Master IFDL
  */
 'use client';
 
@@ -87,7 +87,7 @@ function printTraining(t: Training) {
   td{padding:4px 8px;border:1px solid #ddd;}</style>
   </head><body>
   <h2>Fiche Formation — Plan de Formation & Compétences</h2>
-  <p style="color:#6b7280;margin-top:0">SMART SMOE IFDL · ESEF Berrechid · ISO 21001 §7.2</p>
+  <p style="color:#6b7280;margin-top:0">SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid · ISO 21001 §7.2</p>
   <table style="margin-top:12px"><tbody>
     <tr><th>Titre</th><td colspan="3">${t.titre}</td></tr>
     <tr><th>Type</th><td>${typeLabel}</td><th>Statut</th><td>${statutLabel}</td></tr>
@@ -125,7 +125,7 @@ function printTrainings(list: Training[]) {
   tr:nth-child(even) td{background:#f9fafb;}</style>
   </head><body>
   <h2 style="color:#1a56db">Plan de Formation &amp; Compétences — ISO 21001 §7.2</h2>
-  <p style="color:#6b7280">SMART SMOE IFDL · ESEF Berrechid · Exporté le ${new Date().toLocaleDateString('fr-MA')}</p>
+  <p style="color:#6b7280">SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid · Exporté le ${new Date().toLocaleDateString('fr-MA')}</p>
   <table><thead><tr>
     <th>Titre</th><th>Type</th><th>Statut</th><th>Formateur</th><th>Période</th><th>Heures</th><th>Coût</th>
   </tr></thead><tbody>${rows}</tbody></table>

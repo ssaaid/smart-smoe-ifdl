@@ -1,6 +1,6 @@
 /**
  * Risques & Opportunités — ISO 21001 clause 6.1
- * SMART SMOE IFDL · Master IFDL · ESEF Berrechid
+ * SALHY Abdelilah SMART SMOE MASTER · Master IFDL · ESEF Berrechid
  */
 'use client';
 

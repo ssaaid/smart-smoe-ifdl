@@ -283,7 +283,7 @@ ${recs.map(r => `
 </div>`).join('')}
 
 <div class="footer">
-  SMART SMOE IFDL v1.0.0 · Système Intelligent de Management ISO 21001 · ESEF Berrechid
+  SALHY Abdelilah SMART SMOE MASTER v1.0.0 · Système Intelligent de Management ISO 21001 · ESEF Berrechid
 </div>
 </body>
 </html>`;

@@ -1,5 +1,5 @@
 /**
- * Root Layout — SMART SMOE IFDL
+ * Root Layout — SALHY Abdelilah SMART SMOE MASTER
  * Global providers, fonts, theme
  */
 import type { Metadata } from 'next';
@@ -24,8 +24,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: 'SMART SMOE IFDL',
-    template: '%s | SMART SMOE IFDL',
+    default: 'SALHY Abdelilah SMART SMOE MASTER',
+    template: '%s | SALHY Abdelilah SMART SMOE MASTER',
   },
   description:
     'Système Intelligent de Management ISO 21001 — Master IFDL, ESEF Berrechid, Université Hassan 1er',

@@ -78,7 +78,7 @@ function printCirculaire(c: typeof circulairesInit[0]) {
   .meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f9fafb;padding:12px;border-radius:6px;}
   .meta-item{font-size:11px;}.meta-label{color:#6b7280;font-size:10px;margin-bottom:2px;}</style>
   </head><body>
-  <p style="color:#6b7280;font-size:11px;margin-bottom:4px">SMART SMOE IFDL · ESEF Berrechid · Communication Institutionnelle</p>
+  <p style="color:#6b7280;font-size:11px;margin-bottom:4px">SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid · Communication Institutionnelle</p>
   <h2>${c.reference}</h2>
   <h3 style="margin-top:4px;color:#111">${c.titre}</h3>
   <hr/>
@@ -109,7 +109,7 @@ function printAnnonces(list: typeof annoncesInit) {
   tr:nth-child(even) td{background:#f9fafb;}</style>
   </head><body>
   <h2 style="color:#1a56db;margin-bottom:4px">Annonces Institutionnelles</h2>
-  <p style="color:#6b7280">SMART SMOE IFDL · ESEF Berrechid · ${new Date().toLocaleDateString('fr-MA')}</p>
+  <p style="color:#6b7280">SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid · ${new Date().toLocaleDateString('fr-MA')}</p>
   <table style="margin-top:12px"><thead><tr>
     <th>Titre</th><th>Catégorie</th><th>Priorité</th><th>Date</th>
   </tr></thead><tbody>${rows}</tbody></table>

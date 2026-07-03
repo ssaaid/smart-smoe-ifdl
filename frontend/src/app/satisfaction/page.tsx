@@ -1,6 +1,6 @@
 /**
  * Enquêtes de Satisfaction — ISO 21001 §9.1.2
- * Mesure satisfaction parties prenantes · SMART SMOE IFDL
+ * Mesure satisfaction parties prenantes · SALHY Abdelilah SMART SMOE MASTER
  * ESEF Berrechid · Master IFDL
  */
 'use client';
@@ -115,7 +115,7 @@ function printSurvey(s: Survey) {
   td{padding:4px 8px;border:1px solid #ddd;}</style>
   </head><body>
   <h2>Fiche Enquête de Satisfaction</h2>
-  <p style="color:#6b7280;margin-top:0">SMART SMOE IFDL · ESEF Berrechid · ISO 21001 §9.1.2</p>
+  <p style="color:#6b7280;margin-top:0">SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid · ISO 21001 §9.1.2</p>
   <table style="margin-top:12px"><tbody>
     <tr><th>Titre</th><td colspan="3">${s.titre}</td></tr>
     <tr><th>Type</th><td>${typeLabel}</td><th>Statut</th><td>${statutLabel}</td></tr>
@@ -151,7 +151,7 @@ function printSurveys(list: Survey[]) {
   tr:nth-child(even) td{background:#f9fafb;}</style>
   </head><body>
   <h2 style="color:#1a56db">Enquêtes de Satisfaction — ISO 21001 §9.1.2</h2>
-  <p style="color:#6b7280">SMART SMOE IFDL · ESEF Berrechid · Exporté le ${new Date().toLocaleDateString('fr-MA')}</p>
+  <p style="color:#6b7280">SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid · Exporté le ${new Date().toLocaleDateString('fr-MA')}</p>
   <table><thead><tr>
     <th>Titre</th><th>Type</th><th>Statut</th><th>Participation</th><th>Score moyen</th><th>Période</th>
   </tr></thead><tbody>${rows}</tbody></table>

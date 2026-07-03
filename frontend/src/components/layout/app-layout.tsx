@@ -1,6 +1,6 @@
 /**
  * AppLayout — Main Layout with Sidebar + Topbar
- * SMART SMOE IFDL · ISO 21001
+ * SALHY Abdelilah SMART SMOE MASTER · ISO 21001
  */
 'use client';
 

@@ -130,7 +130,7 @@ function printComplaint(c: Complaint) {
   td{padding:4px 8px;border:1px solid #ddd;}</style>
   </head><body>
   <h2>Fiche Réclamation / Recours</h2>
-  <p style="color:#6b7280;margin-top:0">SMART SMOE IFDL · ESEF Berrechid · Master IFDL</p>
+  <p style="color:#6b7280;margin-top:0">SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid · Master IFDL</p>
   <table style="margin-top:12px"><tbody>
     <tr><th>Référence</th><td>${c.reference}</td><th>Type</th><td>${typeLabel}</td></tr>
     <tr><th>Statut</th><td>${statutLabel}</td><th>Priorité</th><td>${c.priorite}</td></tr>
@@ -169,7 +169,7 @@ function printComplaints(list: Complaint[]) {
   tr:nth-child(even) td{background:#f9fafb;}</style>
   </head><body>
   <h2 style="color:#1a56db">Réclamations &amp; Recours</h2>
-  <p style="color:#6b7280">SMART SMOE IFDL · ESEF Berrechid · Exporté le ${new Date().toLocaleDateString('fr-MA')}</p>
+  <p style="color:#6b7280">SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid · Exporté le ${new Date().toLocaleDateString('fr-MA')}</p>
   <table><thead><tr>
     <th>Référence</th><th>Type</th><th>Objet</th><th>Statut</th><th>Priorité</th><th>Déclarant</th><th>Date dépôt</th>
   </tr></thead><tbody>${rows}</tbody></table>

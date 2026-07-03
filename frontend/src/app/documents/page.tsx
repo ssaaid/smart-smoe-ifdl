@@ -1,6 +1,6 @@
 /**
  * Gestion Documentaire GED — ISO 21001 clause 7.5
- * SMART SMOE IFDL · ESEF Berrechid · Master IFDL
+ * SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid · Master IFDL
  */
 'use client';
 
@@ -127,7 +127,7 @@ function printDoc(doc: Doc) {
     @media print { @page { margin: 20mm; } }
   </style></head><body>
   <h1>${doc.reference} — ${doc.titre}</h1>
-  <h2>SMART SMOE IFDL · ESEF Berrechid · Fiche document générée le ${date}</h2>
+  <h2>SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid · Fiche document générée le ${date}</h2>
   <div class="grid">
     <div class="field"><div class="field-label">Type</div><div class="field-value">${tc.label}</div></div>
     <div class="field"><div class="field-label">Version</div><div class="field-value">v${doc.version}</div></div>
@@ -138,7 +138,7 @@ function printDoc(doc: Doc) {
     <div class="field"><div class="field-label">Date de révision</div><div class="field-value">${formatDate(doc.date_revision)}</div></div>
     <div class="field"><div class="field-label">Référence</div><div class="field-value">${doc.reference}</div></div>
   </div>
-  <div class="footer">SMART SMOE IFDL · ISO 21001:2018 §7.5 · ESEF Berrechid · Université Hassan 1er</div>
+  <div class="footer">SALHY Abdelilah SMART SMOE MASTER · ISO 21001:2018 §7.5 · ESEF Berrechid · Université Hassan 1er</div>
   </body></html>`;
   const w = window.open('', '_blank', 'width=800,height=650');
   if (!w) return;

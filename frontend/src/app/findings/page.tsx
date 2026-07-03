@@ -1,6 +1,6 @@
 /**
  * Non-conformités & Constats d'audit — ISO 21001 clause 10.2
- * SMART SMOE IFDL · Master IFDL · ESEF Berrechid
+ * SALHY Abdelilah SMART SMOE MASTER · Master IFDL · ESEF Berrechid
  */
 'use client';
 
@@ -157,7 +157,7 @@ function printFinding(f: Finding) {
     @media print{@page{margin:20mm}}
   </style></head><body>
   <h1>${f.code} — ${tc.label}</h1>
-  <h2>SMART SMOE IFDL · ISO 21001 §${f.clause} · Généré le ${date}</h2>
+  <h2>SALHY Abdelilah SMART SMOE MASTER · ISO 21001 §${f.clause} · Généré le ${date}</h2>
   <div class="desc">${f.description}</div>
   <div class="grid">
     <div class="field"><div class="fl">Type</div><div class="fv">${tc.label}</div></div>

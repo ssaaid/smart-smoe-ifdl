@@ -1,5 +1,5 @@
 /**
- * Login Page — SMART SMOE IFDL
+ * Login Page — SALHY Abdelilah SMART SMOE MASTER
  * Authentification JWT · Design institutionnel
  */
 'use client';
@@ -99,7 +99,7 @@ export default function LoginPage() {
                 <Image src="/logo.jpeg" alt="ESEF Logo" width={48} height={48} className="object-cover w-full h-full" />
               </div>
               <div>
-                <h1 className="text-white font-bold text-xl leading-tight">SMART SMOE IFDL</h1>
+                <h1 className="text-white font-bold text-xl leading-tight">SALHY Abdelilah SMART SMOE MASTER</h1>
                 <p className="text-blue-200 text-xs">Système Intelligent de Management ISO 21001</p>
               </div>
             </div>
@@ -168,7 +168,7 @@ export default function LoginPage() {
               <Image src="/logo.jpeg" alt="ESEF Logo" width={40} height={40} className="object-cover w-full h-full" />
             </div>
             <div>
-              <h1 className="font-bold text-lg leading-tight">SMART SMOE IFDL</h1>
+              <h1 className="font-bold text-lg leading-tight">SALHY Abdelilah SMART SMOE MASTER</h1>
               <p className="text-muted-foreground text-xs">ISO 21001 · ESEF Berrechid</p>
             </div>
           </div>
@@ -308,7 +308,7 @@ export default function LoginPage() {
           <p className="text-center text-[11px] text-muted-foreground">
             ESEF Berrechid · Université Hassan 1er · Master IFDL
             <br />
-            <span className="text-primary font-medium">SMART SMOE IFDL v1.0.0</span>
+            <span className="text-primary font-medium">SALHY Abdelilah SMART SMOE MASTER v1.0.0</span>
           </p>
         </motion.div>
       </div>

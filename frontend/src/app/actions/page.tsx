@@ -1,6 +1,6 @@
 /**
  * Actions Correctives et Préventives — ISO 21001 §10.2
- * SMART SMOE IFDL · ESEF Berrechid · Master IFDL
+ * SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid · Master IFDL
  */
 'use client';
 
@@ -167,7 +167,7 @@ function printAction(a: Action) {
   .badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;}
   </style></head><body>
   <h2>Fiche Action Corrective / Préventive</h2>
-  <p style="color:#6b7280;margin-top:0">SMART SMOE IFDL · ESEF Berrechid · ISO 21001 §10.2</p>
+  <p style="color:#6b7280;margin-top:0">SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid · ISO 21001 §10.2</p>
   <table style="margin-top:12px"><tbody>
     <tr><th>Code</th><td style="padding:4px 8px;border:1px solid #ddd">${a.code}</td>
         <th>Type</th><td style="padding:4px 8px;border:1px solid #ddd">${typeLabel}</td></tr>
@@ -209,7 +209,7 @@ function printActions(list: Action[]) {
   tr:nth-child(even) td{background:#f9fafb;}</style>
   </head><body>
   <h2 style="color:#1a56db">Actions Correctives &amp; Préventives — ISO 21001 §10.2</h2>
-  <p style="color:#6b7280">SMART SMOE IFDL · ESEF Berrechid · Exporté le ${new Date().toLocaleDateString('fr-MA')}</p>
+  <p style="color:#6b7280">SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid · Exporté le ${new Date().toLocaleDateString('fr-MA')}</p>
   <table><thead><tr>
     <th>Code</th><th>Type</th><th>Titre</th><th>Statut</th><th>Avanc.</th><th>Responsable</th><th>Échéance</th>
   </tr></thead><tbody>${rows}</tbody></table>

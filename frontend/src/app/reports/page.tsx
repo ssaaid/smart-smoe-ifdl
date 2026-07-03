@@ -1,6 +1,6 @@
 /**
  * Rapports & Revue de Direction — ISO 21001 clause 9.3
- * SMART SMOE IFDL · ESEF Berrechid · Master IFDL
+ * SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid · Master IFDL
  */
 'use client';
 
@@ -85,7 +85,7 @@ function printReport(report: typeof reports[0]) {
 <html lang="fr">
 <head>
 <meta charset="utf-8"/>
-<title>${report.titre} — SMART SMOE IFDL</title>
+<title>${report.titre} — SALHY Abdelilah SMART SMOE MASTER</title>
 <style>
   * { margin:0;padding:0;box-sizing:border-box; }
   body { font-family:'Segoe UI',Arial,sans-serif;color:#111827;background:#fff;padding:32px; }
@@ -106,7 +106,7 @@ function printReport(report: typeof reports[0]) {
 <div class="header">
   <div>
     <h1>${report.titre}</h1>
-    <p class="sub">ESEF Berrechid · Université Hassan 1er · Master IFDL · SMART SMOE IFDL</p>
+    <p class="sub">ESEF Berrechid · Université Hassan 1er · Master IFDL · SALHY Abdelilah SMART SMOE MASTER</p>
     <p class="sub" style="margin-top:4px">Généré le ${date}</p>
   </div>
   <div style="text-align:right">
@@ -150,7 +150,7 @@ ${report.decisions_cles.length > 0 ? `
   </table>
 </div>
 
-<div class="footer">SMART SMOE IFDL v1.0.0 · ISO 21001:2018 §9.3 · ESEF Berrechid</div>
+<div class="footer">SALHY Abdelilah SMART SMOE MASTER v1.0.0 · ISO 21001:2018 §9.3 · ESEF Berrechid</div>
 </body></html>`;
 
   const w = window.open('', '_blank', 'width=850,height=650');
@@ -163,7 +163,7 @@ ${report.decisions_cles.length > 0 ? `
 
 // ── Share Report ───────────────────────────────────────────────
 function shareReport(report: typeof reports[0]) {
-  const msg = `📄 ${report.titre}\nType : ${typeConfig[report.type]?.label}\nPériode : ${new Date(report.periode_debut).toLocaleDateString('fr-MA')} → ${new Date(report.periode_fin).toLocaleDateString('fr-MA')}\nStatut : ${statutConfig[report.statut]?.label}\nAuteur : ${report.auteur}\n— SMART SMOE IFDL · ESEF Berrechid`;
+  const msg = `📄 ${report.titre}\nType : ${typeConfig[report.type]?.label}\nPériode : ${new Date(report.periode_debut).toLocaleDateString('fr-MA')} → ${new Date(report.periode_fin).toLocaleDateString('fr-MA')}\nStatut : ${statutConfig[report.statut]?.label}\nAuteur : ${report.auteur}\n— SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid`;
   navigator.clipboard.writeText(msg)
     .then(() => toast.success('Résumé copié dans le presse-papiers'))
     .catch(() => toast.error('Impossible de copier'));
@@ -221,7 +221,7 @@ function GenerateReportForm({ onClose, onAdd }: { onClose: () => void; onAdd: (r
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-sm font-semibold">Générer un nouveau rapport</h3>
-            <p className="text-xs text-muted-foreground">ISO 21001 §9.3 · SMART SMOE IFDL</p>
+            <p className="text-xs text-muted-foreground">ISO 21001 §9.3 · SALHY Abdelilah SMART SMOE MASTER</p>
           </div>
           <button onClick={onClose}><X className="h-4 w-4 text-muted-foreground" /></button>
         </div>

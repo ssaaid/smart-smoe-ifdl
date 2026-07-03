@@ -1,6 +1,6 @@
 /**
  * Cartographie des Processus SMOE — ISO 21001 clause 4.4
- * SMART SMOE IFDL · ESEF Berrechid · Master IFDL
+ * SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid · Master IFDL
  */
 'use client';
 
@@ -394,7 +394,7 @@ function printProcess(p: typeof processes[0]) {
     @media print { @page { margin: 20mm; } }
   </style></head><body>
   <h1>${p.code} — ${p.libelle}</h1>
-  <h2>SMART SMOE IFDL · ESEF Berrechid · Généré le ${date}</h2>
+  <h2>SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid · Généré le ${date}</h2>
   <div class="meta">
     <div><div class="section-title">Type</div><strong>${{ management:'Pilotage', realisation:'Réalisation', support:'Support' }[p.type]}</strong></div>
     <div><div class="section-title">Responsable</div><strong>${p.responsable}</strong></div>
@@ -443,7 +443,7 @@ function printAllProcesses() {
     @media print { @page { margin: 20mm; } }
   </style></head><body>
   <h1>Cartographie des Processus SMOE</h1>
-  <h2>SMART SMOE IFDL · ESEF Berrechid · ISO 21001 §4.4 · Généré le ${date}</h2>
+  <h2>SALHY Abdelilah SMART SMOE MASTER · ESEF Berrechid · ISO 21001 §4.4 · Généré le ${date}</h2>
   <table><thead><tr><th>Code</th><th>Libellé</th><th>Type</th><th>Responsable</th><th style="text-align:center">Performance</th><th style="text-align:center">KPIs</th><th style="text-align:center">Documents</th></tr></thead>
   <tbody>${rows}</tbody></table>
   </body></html>`;

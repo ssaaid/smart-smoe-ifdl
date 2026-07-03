@@ -1,5 +1,5 @@
 /**
- * Dashboard Page — SMART SMOE IFDL
+ * Dashboard Page — SALHY Abdelilah SMART SMOE MASTER
  * Tableau de bord exécutif ISO 21001
  */
 'use client';
