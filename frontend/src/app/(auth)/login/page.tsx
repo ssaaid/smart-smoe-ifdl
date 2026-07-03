@@ -136,8 +136,8 @@ export default function LoginPage() {
 
           {/* Footer */}
           <div className="flex items-center gap-4 pt-8 border-t border-white/10">
-            <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-white/10">
-              <Image src="/logo_esef.jpg" alt="ESEF Berrechid" width={40} height={40} className="object-contain w-full h-full" />
+            <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 border border-white/25">
+              <Image src="/logo_esef.jpg" alt="ESEF Berrechid" width={40} height={40} className="object-cover w-full h-full" />
             </div>
             <div>
               <p className="text-white/90 text-xs font-semibold">ESEF Berrechid</p>
