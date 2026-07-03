@@ -96,7 +96,7 @@ export default function LoginPage() {
           <div>
             <div className="flex items-center gap-3 mb-8">
               <div className="w-12 h-12 rounded-xl overflow-hidden border border-white/25">
-                <Image src="/logo.jpeg" alt="ESEF Logo" width={48} height={48} className="object-cover w-full h-full" />
+                <Image src="/logo_esef.jpg" alt="ESEF Logo" width={48} height={48} className="object-contain w-full h-full" />
               </div>
               <div>
                 <h1 className="text-white font-bold text-xl leading-tight">SALHY Abdelilah SMART SMOE MASTER</h1>
@@ -137,7 +137,7 @@ export default function LoginPage() {
           {/* Footer */}
           <div className="flex items-center gap-4 pt-8 border-t border-white/10">
             <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-white/10">
-              <Image src="/logo-esef.jpg" alt="ESEF Berrechid" width={40} height={40} className="object-contain w-full h-full" />
+              <Image src="/logo_esef.jpg" alt="ESEF Berrechid" width={40} height={40} className="object-contain w-full h-full" />
             </div>
             <div>
               <p className="text-white/90 text-xs font-semibold">ESEF Berrechid</p>
@@ -165,7 +165,7 @@ export default function LoginPage() {
           {/* Mobile logo */}
           <div className="flex items-center gap-3 lg:hidden">
             <div className="w-10 h-10 rounded-xl overflow-hidden">
-              <Image src="/logo.jpeg" alt="ESEF Logo" width={40} height={40} className="object-cover w-full h-full" />
+              <Image src="/logo_esef.jpg" alt="ESEF Logo" width={40} height={40} className="object-contain w-full h-full" />
             </div>
             <div>
               <h1 className="font-bold text-lg leading-tight">SALHY Abdelilah SMART SMOE MASTER</h1>
