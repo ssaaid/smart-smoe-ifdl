@@ -27,8 +27,18 @@ import { useAuthStore } from '@/store/auth-store';
 // ── Roles with access to management features (not etudiant) ───
 const MANAGERS = ['admin', 'responsable_qualite', 'coordonnateur', 'enseignant', 'personnel_admin', 'auditeur'];
 
+interface NavItem {
+  href: string;
+  icon: React.ElementType;
+  label: string;
+  badge: string | null;
+  badgeVariant?: 'destructive';
+  roles?: string[];
+}
+interface NavSection { title: string; items: NavItem[]; }
+
 // ── Navigation structure ───────────────────────────────────────
-const navSections = [
+const navSections: NavSection[] = [
   {
     title: 'Principal',
     items: [
