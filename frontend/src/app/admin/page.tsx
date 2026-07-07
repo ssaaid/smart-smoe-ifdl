@@ -5,6 +5,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -299,6 +300,7 @@ function EditUserModal({ user, onClose, onSaved }: { user: any; onClose: () => v
 
 // ── Main Page ──────────────────────────────────────────────────
 export default function AdminPage() {
+  const router      = useRouter();
   const currentUser = useAuthStore(s => s.user);
   const [search,       setSearch]       = useState('');
   const [showForm,     setShowForm]     = useState(false);
@@ -306,6 +308,13 @@ export default function AdminPage() {
   const [userList,     setUserList]     = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [togglingId,   setTogglingId]   = useState<string | null>(null);
+
+  // Garde rôle — seul l'admin peut accéder à cette page
+  useEffect(() => {
+    if (currentUser && currentUser.role !== 'admin') {
+      router.replace('/dashboard');
+    }
+  }, [currentUser, router]);
 
   useEffect(() => {
     api.get('/users')

@@ -24,6 +24,9 @@ import { cn } from '@/lib/utils';
 import { useTheme } from 'next-themes';
 import { useAuthStore } from '@/store/auth-store';
 
+// ── Roles with access to management features (not etudiant) ───
+const MANAGERS = ['admin', 'responsable_qualite', 'coordonnateur', 'enseignant', 'personnel_admin', 'auditeur'];
+
 // ── Navigation structure ───────────────────────────────────────
 const navSections = [
   {
@@ -35,40 +38,40 @@ const navSections = [
   {
     title: 'Pilotage Qualité',
     items: [
-      { href: '/kpi',       icon: Target,        label: 'KPI & Indicateurs', badge: '3' },
-      { href: '/processes', icon: GitBranch,      label: 'Processus SMOE',   badge: null },
+      { href: '/kpi',       icon: Target,        label: 'KPI & Indicateurs', badge: '3',  roles: MANAGERS },
+      { href: '/processes', icon: GitBranch,      label: 'Processus SMOE',   badge: null, roles: MANAGERS },
       { href: '/documents', icon: FolderOpen,     label: 'Gestion Doc.',     badge: null },
-      { href: '/risks',     icon: AlertTriangle,  label: 'Risques',          badge: '3', badgeVariant: 'destructive' as const },
+      { href: '/risks',     icon: AlertTriangle,  label: 'Risques',          badge: '3',  badgeVariant: 'destructive' as const, roles: MANAGERS },
     ],
   },
   {
     title: 'Amélioration',
     items: [
-      { href: '/audits',    icon: ClipboardCheck, label: 'Audits Internes',  badge: '2' },
-      { href: '/findings',  icon: FileX,          label: 'Non-Conformités',  badge: '5', badgeVariant: 'destructive' as const },
-      { href: '/actions',   icon: Wrench,         label: 'Actions Correctives', badge: '12' },
+      { href: '/audits',    icon: ClipboardCheck, label: 'Audits Internes',  badge: '2',  roles: MANAGERS },
+      { href: '/findings',  icon: FileX,          label: 'Non-Conformités',  badge: '5',  badgeVariant: 'destructive' as const, roles: MANAGERS },
+      { href: '/actions',   icon: Wrench,         label: 'Actions Correctives', badge: '12', roles: MANAGERS },
     ],
   },
   {
     title: 'Parties Intéressées',
     items: [
-      { href: '/satisfaction', icon: Smile,        label: 'Satisfaction',    badge: null },
-      { href: '/complaints',   icon: MessageSquare, label: 'Réclamations',   badge: '7' },
+      { href: '/satisfaction', icon: Smile,         label: 'Satisfaction',  badge: null },
+      { href: '/complaints',   icon: MessageSquare, label: 'Réclamations',  badge: '7' },
     ],
   },
   {
     title: 'Ressources',
     items: [
-      { href: '/trainings',  icon: GraduationCap, label: 'Compétences & Formation', badge: null },
-      { href: '/communication', icon: Bell,        label: 'Communication',   badge: '4' },
+      { href: '/trainings',     icon: GraduationCap, label: 'Compétences & Formation', badge: null },
+      { href: '/communication', icon: Bell,           label: 'Communication',          badge: '4' },
     ],
   },
   {
     title: 'Rapports & ISO',
     items: [
-      { href: '/reports',    icon: BookOpen,       label: 'Revue de Direction', badge: null },
-      { href: '/iso-center', icon: Award,          label: 'ISO 21001 Center',  badge: null },
-      { href: '/admin',      icon: Users,          label: 'Administration',     badge: null, roles: ['admin'] },
+      { href: '/reports',    icon: BookOpen, label: 'Revue de Direction', badge: null, roles: MANAGERS },
+      { href: '/iso-center', icon: Award,    label: 'ISO 21001 Center',  badge: null },
+      { href: '/admin',      icon: Users,    label: 'Administration',     badge: null, roles: ['admin'] },
     ],
   },
 ];
@@ -141,7 +144,12 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* ── Navigation ────────────────────────────────────── */}
       <nav className="flex-1 overflow-y-auto py-2 px-2 space-y-0.5 scrollbar-thin">
-        {navSections.map((section) => (
+        {navSections.map((section) => {
+          const visibleItems = section.items.filter(
+            item => !item.roles || item.roles.includes(user?.role ?? '')
+          );
+          if (visibleItems.length === 0) return null;
+          return (
           <div key={section.title} className="mb-1">
             {(!collapsed || isMobile) && (
               <p className="sidebar-section-title">{section.title}</p>
@@ -149,7 +157,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             {collapsed && !isMobile && (
               <div className="my-1 border-t border-white/10" />
             )}
-            {section.items.map((item) => {
+            {visibleItems.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
               return (
                 <TooltipProvider key={item.href} delayDuration={0}>
@@ -194,7 +202,8 @@ export function AppLayout({ children }: AppLayoutProps) {
               );
             })}
           </div>
-        ))}
+          );
+        })}
       </nav>
 
       {/* ── User Footer ───────────────────────────────────── */}
@@ -350,20 +359,22 @@ export function AppLayout({ children }: AppLayoutProps) {
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
             </Button>
 
-            {/* AI Assistant */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link href="/ai-assistant">
-                    <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs hidden sm:flex">
-                      <Brain className="h-3.5 w-3.5 text-purple-500" />
-                      IA SMOE
-                    </Button>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent className="text-xs">Assistant IA ISO 21001</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            {/* AI Assistant — masqué pour etudiant */}
+            {user?.role !== 'etudiant' && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link href="/ai-assistant">
+                      <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs hidden sm:flex">
+                        <Brain className="h-3.5 w-3.5 text-purple-500" />
+                        IA SMOE
+                      </Button>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent className="text-xs">Assistant IA ISO 21001</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
 
             {/* User */}
             <Avatar className="h-7 w-7 cursor-pointer">

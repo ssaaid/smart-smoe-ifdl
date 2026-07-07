@@ -43,6 +43,7 @@ export class UsersController {
   }
 
   @Patch(':id')
+  @Roles('admin')
   @ApiOperation({ summary: 'Met à jour un utilisateur' })
   update(@Param('id') id: string, @Body() dto: Partial<User>): Promise<User> {
     return this.usersService.update(id, dto);
