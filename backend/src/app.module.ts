@@ -29,6 +29,9 @@ import { IsoCenterModule } from './iso-center/iso-center.module';
 import { CompetenciesModule } from './competencies/competencies.module';
 import { HealthModule } from './health/health.module';
 
+// Seed
+import { SeedModule } from './seed/seed.module';
+
 // Export
 import { ExportModule } from './common/export/export.module';
 
@@ -108,6 +111,9 @@ import { AuditTrail } from './common/entities/audit-trail.entity';
       },
       inject: [ConfigService],
     }),
+
+    // ── Seed (bootstrap data) ──────────────────────────────
+    SeedModule,
 
     // ── Export (Global) ────────────────────────────────────
     ExportModule,
