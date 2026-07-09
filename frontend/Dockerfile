@@ -1,12 +1,11 @@
 # ============================================================
 # SMART SMOE IFDL — Frontend Dockerfile
 # Next.js 15 · Standalone output · Production optimized
-# node:20 (Debian) pour le build → pas de apk/DNS requis
-# node:20-alpine pour le stage final (image légère)
 # ============================================================
 
-FROM node:20 AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
+RUN apk add --no-cache libc6-compat
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
 COPY . .
